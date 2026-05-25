@@ -1,22 +1,20 @@
 {
-  "name": "create-elite-app",
-  "version": "2.0.2",
-  "type": "module",
-  "description": "Elite-App is a powerful CLI tool for scaffolding Express and Next.js projects",
-  "bin": {
-    "create-elite-cli": "./bin/cli.js"
-  },
-  "files": [
-    "bin",
-    "template"
+  "name": "morax",
+  "description": "Morax is a next-generation CLI tool for scaffolding modern, high-performance pnpm monorepos and workspaces.",
+  "private": false,
+  "packageManager": "pnpm@9.15.4",
+  "workspaces": [
+    "apps/*"
   ],
   "scripts": {
-    "prepublishOnly": "cp README.npm.md README.md",
-    "postpublish": "git checkout README.md"
+    "dev": "pnpm --filter morax-web dev",
+    "build": "pnpm --filter morax-web build",
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
-  "dependencies": {
-    "chalk": "^5.0.0",
-    "inquirer": "^9.2.15"
-  },
-  "private": false
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "prettier": "3.8.3"
+  }
 }
