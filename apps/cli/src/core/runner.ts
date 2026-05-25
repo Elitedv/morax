@@ -9,12 +9,12 @@ import { runPrettierSetup } from '../tasks/prettier.js';
 import { runEslintSetup } from '../tasks/eslint.js';
 import { runTypescriptSetup } from '../tasks/typescript.js';
 import { runServerSetup } from '../tasks/server.js';
-import { runWebSetup } from '../tasks/web.js';
 import { runGitSetup } from '../tasks/git.js';
 import { runHuskySetup } from '../tasks/husky.js';
 import { endCli } from './endcli.js';
 import { runCommand } from '../utils/exec.js';
 import { setupReadme } from '../tasks/addreadme.js';
+import addNextjs from './web.js';
 
 export async function runWorkspaceScaffolder() {
   // 1. Greet and display premium logo
@@ -49,7 +49,7 @@ export async function runWorkspaceScaffolder() {
   await runServerSetup(projectPath);
 
   // 10. Prompt and execute Next.js Frontend setup
-  await runWebSetup(projectPath);
+  await addNextjs(projectPath);
 
   // 11. Run final pnpm install to resolve all workspace configurations and symlinks
   const s = spinner();
@@ -68,6 +68,6 @@ export async function runWorkspaceScaffolder() {
   }
   console.log('\n');
 
-  // 12. Complete and show beautiful finish screen
+  // 13. Complete and show beautiful finish screen
   endCli(name, projectPath);
 }

@@ -5,7 +5,7 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
 
-export async function promptWeb() {
+export async function promptNextjs() {
   return await confirm({
     message: 'Do you want to setup a Next.js frontend in apps/web?',
     initialValue: true,
@@ -22,6 +22,7 @@ function runInteractiveCommand(
       cwd,
       stdio: 'inherit',
       shell: true,
+      env: { ...process.env, NODE_NO_WARNINGS: '1' },
     });
 
     child.on('close', (code) => {
@@ -42,7 +43,7 @@ function runInteractiveCommand(
   });
 }
 
-export async function setupWeb(projectPath: string) {
+export async function setupNextjs(projectPath: string) {
   const appsDir = path.join(projectPath, 'apps');
   const webDir = path.join(appsDir, 'web');
 
@@ -60,7 +61,7 @@ export async function setupWeb(projectPath: string) {
   );
 }
 
-export async function runWebSetup(projectPath: string) {
+export async function runNextjsSetup(projectPath: string) {
   // Ensure the apps folder option was generated/exists
   const appsDir = path.join(projectPath, 'apps');
   try {
@@ -70,13 +71,13 @@ export async function runWebSetup(projectPath: string) {
     return;
   }
 
-  const webPrompt = await promptWeb();
+  const webPrompt = await promptNextjs();
 
   handleCancel(webPrompt);
 
   if (webPrompt) {
     try {
-      await setupWeb(projectPath);
+      await setupNextjs(projectPath);
       console.log(
         pc.green('\n✔ Success: Next.js frontend configured in apps/web\n'),
       );
