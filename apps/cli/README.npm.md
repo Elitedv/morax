@@ -16,15 +16,15 @@
   A highly polished, interactive CLI that bootstraps custom, modern, high-performance <b>pnpm workspaces</b> in seconds.
 </p>
 
-[Quick Start](#-quick-start) • [Features](#-features-matrix) • [Workflow](#-dynamic-workspace-orchestration) • [Contributing](#-contributing)
+[Quick Start](#-quick-start) • [Features](#-features-matrix) • [Contributing](#-contributing)
 
 ---
 
 </div>
 
-## 🚀 Quick Start
+## Quick Start
 
-Initialize your new workspace instantly using:
+Initialize your new workspace instantly using `npm`:
 
 ```bash
 npm create morax@latest
@@ -42,63 +42,10 @@ Or using `bun`:
 bun create morax
 ```
 
----
-
-## ⚡ Dynamic Workspace Orchestration
-
-Morax acts as a smart orchestrator. Instead of copy-pasting outdated boilerplate code, it executes official framework CLIs and programmatically connects them under the hood:
-
-```mermaid
-graph TD
-    A[npm create morax@latest] --> B[Interactive Configuration Prompt]
-    B -->|Setup Root| C[Create pnpm-workspace.yaml & turbo.json]
-
-    C --> D[Scaffold Applications]
-    D --> D1[Next.js App: npx create-next-app]
-    D --> D2[Express API: TypeScript Backend]
-
-    C --> E[Scaffold Shared Libraries]
-    E --> E1[packages/ui: shadcn init]
-    E --> E2[packages/db: prisma/drizzle init]
-    E --> E3[packages/configs: tsconfig & eslint]
-
-    D1 & D2 & E1 & E2 & E3 --> F[Link Workspace Packages]
-    F --> G[Inject workspace:* references into Package Manifests]
-    G --> H[Run pnpm install at Workspace Root]
-    H --> I[Ready to Code!]
-
-    style A fill:#8A2BE2,stroke:#fff,stroke-width:2px,color:#fff
-    style B fill:#1f1f1f,stroke:#8A2BE2,stroke-width:1px,color:#fff
-    style C fill:#1f1f1f,stroke:#8A2BE2,stroke-width:1px,color:#fff
-    style D fill:#007acc,stroke:#fff,stroke-width:1px,color:#fff
-    style E fill:#e25c00,stroke:#fff,stroke-width:1px,color:#fff
-    style F fill:#2ea44f,stroke:#fff,stroke-width:2px,color:#fff
-    style I fill:#2ea44f,stroke:#fff,stroke-width:2px,color:#fff
-```
-
----
-
-### Interactive Prompts
-
-Morax guides you step-by-step to customize your developer experience:
-
-```ansi
-? What is the name of your workspace? › my-morax-monorepo
-? Which applications would you like to scaffold? ›
- 🎯 [x] Next.js Web App
- 🔌 [x] Express.js API
-? Which packages would you like to configure? ›
- 🎨 [x] Shared UI Library (Tailwind + Shadcn)
- 🗃️ [x] Shared Database Client (Prisma + PostgreSQL)
- ⚙️ [x] Shared Linting & TypeScript Configurations
-```
-
-### Launch Development Server
-
 Once setup is complete, navigate into your directory and launch the unified development server:
 
 ```bash
-cd my-morax-monorepo
+cd my-morax-workspace
 pnpm dev
 ```
 
@@ -120,6 +67,8 @@ pnpm dev
 
 We welcome contributions to make Morax even better!
 
+Please check our [GitHub Repository](https://github.com/Elitedv/morax) for issues, pull requests, and dev instructions.
+
 1. **Fork** the repository
 2. **Create** your feature branch (`git checkout -b feature/AmazingFeature`)
 3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
@@ -130,7 +79,7 @@ We welcome contributions to make Morax even better!
 
 ## 📝 License
 
-Distributed under the MIT License. See [LICENSE](file:///c:/Users/runak/Coding/Development/Morax/LICENSE) for details.
+Distributed under the MIT License. See [LICENSE](https://github.com/Elitedv/morax/blob/main/LICENSE) for details.
 
 ---
 

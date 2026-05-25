@@ -1,49 +1,35 @@
+import { confirm, spinner } from '@clack/prompts';
+import pc from 'picocolors';
+import handleCancel from '../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { runCommand } from '../utils/exec.js';
 
-const execAsync = promisify(exec);
+export async function promptHusky() {
+  return await confirm({
+    message: 'Do you want to setup Husky pre-commit hooks?',
+    initialValue: true,
+  });
+}
 
 export async function setupHusky(projectPath: string) {
-  // 1. Install Prettier and Husky dynamically with exact versions
-  await execAsync('pnpm add --save-dev --save-exact prettier husky -w', {
-    cwd: projectPath,
-  });
+  // 1. Install Husky dynamically with exact version at the workspace root
+  await runCommand('pnpm add -D -E husky -w', { cwd: projectPath });
 
-  // 2. Add format script to root package.json
-  const rootPackagePath = path.join(projectPath, 'package.json');
-  const rootPackageContent = await fsPromises.readFile(rootPackagePath, 'utf8');
-  const pkg = JSON.parse(rootPackageContent);
+  // 2. Initialize Husky using its official init generator
+  await runCommand('pnpm exec husky init', { cwd: projectPath });
 
-  pkg.scripts = {
-    ...(pkg.scripts || {}),
-    format: 'prettier --write .',
-  };
-
-  await fsPromises.writeFile(
-    rootPackagePath,
-    JSON.stringify(pkg, null, 2),
-    'utf8',
-  );
-
-  // 3. Initialize Husky using its official init generator
-  await execAsync('pnpm exec husky init', { cwd: projectPath });
-
-  // 4. Update the auto-generated .husky/pre-commit file
+  // 3. Update the auto-generated .husky/pre-commit file to run format and stage files
   const preCommitPath = path.join(projectPath, '.husky', 'pre-commit');
   let hookContent = '';
   try {
     hookContent = await fsPromises.readFile(preCommitPath, 'utf8');
   } catch {
-    hookContent = 'pnpm test';
+    hookContent = 'pnpm test'; // Default fallback
   }
 
   // Replace default test commands with formatting checks
-  hookContent = hookContent
-    .replace('npm test', 'pnpm format')
-    .replace('pnpm test', 'pnpm format')
-    .replace('pnpm run test', 'pnpm format');
+  hookContent = hookContent.replace('pnpm test', 'pnpm format');
 
   // Append staging of newly formatted files
   if (!hookContent.includes('git add .')) {
@@ -55,10 +41,30 @@ export async function setupHusky(projectPath: string) {
   try {
     await fsPromises.chmod(preCommitPath, 0o755);
   } catch {}
+}
 
-  // 5. Initial format execution
-  await execAsync('pnpm format', { cwd: projectPath });
+export async function runHuskySetup(
+  projectPath: string,
+  gitInitialized: boolean,
+) {
+  if (!gitInitialized) return;
 
-  // 6. Stage all changes for initial commit
-  await execAsync('git add .', { cwd: projectPath });
+  const huskyPrompt = await promptHusky();
+
+  handleCancel(huskyPrompt);
+
+  if (huskyPrompt) {
+    const s = spinner();
+    console.log('\n');
+    s.start('Setting up Husky hooks...');
+    try {
+      await setupHusky(projectPath);
+      s.stop(pc.green('✔ Success: Husky pre-commit hooks configured'));
+    } catch (error: any) {
+      s.stop(pc.red('✖ Failed: Husky setup failed'));
+      console.error(pc.red(`\nError details: ${error.message || error}`));
+      process.exit(1);
+    }
+    console.log('\n');
+  }
 }

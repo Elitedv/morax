@@ -1,17 +1,28 @@
 {
-  "name": "@elitedv/morax",
-  "version": "1.0.0",
+  "name": "create-morax",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "author": "Ashutosh",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Elitedv/morax.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Elitedv/morax/issues"
+  },
+  "homepage": "https://github.com/Elitedv/morax#readme",
   "bin": {
+    "create-morax": "dist/index.js",
     "morax": "dist/index.js"
   },
   "scripts": {
     "dev": "npx tsx src/index.ts",
     "build": "tsup",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "node -e \"const fs = require('fs'); fs.renameSync('README.md', 'README.github.md'); fs.renameSync('README.npm.md', 'README.md')\"",
+    "postpublish": "node -e \"const fs = require('fs'); fs.renameSync('README.md', 'README.npm.md'); fs.renameSync('README.github.md', 'README.md')\""
   },
   "files": [
     "dist"
