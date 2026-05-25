@@ -1,2 +1,3 @@
 pnpm format
+npm --prefix apps/cli version patch --no-git-tag-version
 git add .
