@@ -1,5 +1,5 @@
 import path from 'path';
-import { spinner } from '@clack/prompts';
+import { spinner, multiselect } from '@clack/prompts';
 import pc from 'picocolors';
 
 import { startCli } from './startcli.js';
@@ -15,6 +15,7 @@ import { endCli } from './endcli.js';
 import { runCommand } from '../utils/exec.js';
 import { setupReadme } from '../tasks/addreadme.js';
 import addNextjs from './web.js';
+import handleCancel from '../utils/isCancel.js';
 
 export async function runWorkspaceScaffolder() {
   // 1. Greet and display premium logo
@@ -33,23 +34,39 @@ export async function runWorkspaceScaffolder() {
   // 4. Prompt and execute Git initialization
   const gitInitialized = await runGitSetup(projectPath);
 
-  // 5. Prompt and execute Prettier setup
-  await runPrettierSetup(projectPath);
+  // Ask which tools and features to include upfront
+  const selectedTools = await askWhichToolToInclude();
+  const selectedApps = await askServerorFrontendInclue();
 
-  // 6. Prompt and execute ESLint setup
-  await runEslintSetup(projectPath);
+  // 5. Execute Prettier setup if selected
+  if (selectedTools.includes('prettier')) {
+    await runPrettierSetup(projectPath);
+  }
 
-  // 7. Prompt and execute TypeScript setup
-  await runTypescriptSetup(projectPath);
+  // 6. Execute Husky setup if selected and git is initialized
+  if (selectedTools.includes('husky')) {
+    await runHuskySetup(projectPath, gitInitialized);
+  }
 
-  // 8. Prompt and execute Husky setup
-  await runHuskySetup(projectPath, gitInitialized);
+  // 7. Execute ESLint setup if selected
+  if (selectedTools.includes('eslint')) {
+    await runEslintSetup(projectPath);
+  }
 
-  // 9. Prompt and execute Express Backend setup
-  await runServerSetup(projectPath);
+  // 8. Execute TypeScript setup if selected
+  if (selectedTools.includes('typescript')) {
+    await runTypescriptSetup(projectPath);
+  }
 
-  // 10. Prompt and execute Next.js Frontend setup
-  await addNextjs(projectPath);
+  // 9. Execute Express Backend setup if selected
+  if (selectedApps.includes('server')) {
+    await runServerSetup(projectPath);
+  }
+
+  // 10. Execute Next.js/Vite Frontend setup if selected
+  if (selectedApps.includes('web')) {
+    await addNextjs(projectPath);
+  }
 
   // 11. Run final pnpm install to resolve all workspace configurations and symlinks
   const s = spinner();
@@ -70,4 +87,58 @@ export async function runWorkspaceScaffolder() {
 
   // 13. Complete and show beautiful finish screen
   endCli(name, projectPath);
+}
+
+async function askWhichToolToInclude() {
+  const tools = await multiselect({
+    message: 'Which configurations/linter tools would you like to set up?',
+    options: [
+      {
+        value: 'prettier',
+        label: 'Prettier',
+        hint: 'Code formatter rules & auto-formatting script',
+      },
+      {
+        value: 'eslint',
+        label: 'ESLint',
+        hint: 'Modern Flat Config linter configurations',
+      },
+      {
+        value: 'typescript',
+        label: 'TypeScript',
+        hint: 'Extendable shared TypeScript configurations',
+      },
+      {
+        value: 'husky',
+        label: 'Husky',
+        hint: 'Git pre-commit hooks setup (requires Git)',
+      },
+    ],
+    required: false,
+  });
+
+  handleCancel(tools);
+  return tools as string[];
+}
+
+async function askServerorFrontendInclue() {
+  const apps = await multiselect({
+    message: 'Which backend/frontend applications would you like to set up?',
+    options: [
+      {
+        value: 'server',
+        label: 'Express.js Backend',
+        hint: 'Scaffold Express backend in apps/server',
+      },
+      {
+        value: 'web',
+        label: 'Frontend Web App',
+        hint: 'Scaffold Next.js or React (Vite) frontend in apps/web',
+      },
+    ],
+    required: false,
+  });
+
+  handleCancel(apps);
+  return apps as string[];
 }
