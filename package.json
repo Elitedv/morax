@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "pnpm --filter morax-web dev",
     "build": "pnpm --filter morax-web build",
+    "start": "pnpm --filter morax-web start",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
