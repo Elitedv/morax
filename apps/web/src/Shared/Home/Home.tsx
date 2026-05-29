@@ -3,6 +3,8 @@ import Navbar from '../Navbar';
 import Herosection from './Sections/Herosection';
 import MoraxImage from './Sections/MoraxImage';
 import Process from './Sections/Process/Process';
+import Features from './Sections/Features/Features';
+import Workflow from './Sections/Workflow/Workflow';
 
 const Home = () => {
   const navItems = [
@@ -17,6 +19,8 @@ const Home = () => {
         <Herosection />
         <MoraxImage />
         <Process />
+        <Features />
+        <Workflow />
       </BackgroundLines>
     </div>
   );

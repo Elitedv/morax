@@ -25,8 +25,8 @@ const MoraxImage = () => {
             height={2000}
             width={2000}
             alt="Morax CLI Preview"
-            src="/morax.png"
-            className="w-full h-auto object-contain bg-black p-4"
+            src="/morax-image.png"
+            className="w-full h-auto object-contain bg-black p-4 mix-blend-hard-light "
           />
         </div>
       </div>

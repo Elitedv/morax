@@ -20,12 +20,12 @@ const SectionHeading = ({
         </div>
 
         {/* Heading */}
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-center max-w-4xl leading-tight">
+        <h2 className="text-2xl md:text-3xl lg:text-3xl tracking-tight text-center max-w-4xl leading-tight">
           {title}
         </h2>
 
         {/* Monospace Sub-heading */}
-        <p className="font-mono text-xs md:text-[13px] text-zinc-500 mt-4 tracking-wider text-center uppercase select-none">
+        <p className="font-mono text-xs md:text-lg text-zinc-500 mt-4 tracking-wider text-center select-none">
           {description}
         </p>
       </div>

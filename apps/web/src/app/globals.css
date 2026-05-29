@@ -7,6 +7,13 @@
 @theme {
   --font-inter: var(--font-inter);
   --font-fira-code: var(--font-fira-code);
+  --animate-workflow-dash: workflow-dash 0.9s linear infinite;
+
+  @keyframes workflow-dash {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
 }
 
 @theme inline {
