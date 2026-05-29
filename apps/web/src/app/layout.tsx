@@ -4,6 +4,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import FontChanger, { FontInitializer } from '@/Shared/FontChanger/FontChanger';
 import { Lexend } from 'next/font/google';
+import SmoothScroll from '@/Shared/SmoothScroll/SmoothScroll';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend' });
@@ -122,7 +123,7 @@ export default function RootLayout({
             <FontInitializer />
           </>
         )}
-        {children}
+        <SmoothScroll>{children}</SmoothScroll>
         {process.env.NODE_ENV === 'development' && (
           <>
             <FontChanger />
