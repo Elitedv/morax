@@ -99,7 +99,7 @@ const Workflow = () => {
       {/* Decorative subtle background light */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className={cn('container mx-auto px-4 max-w-6xl')}>
+      <div className={cn('container mx-auto max-w-6xl')}>
         {/* Section Heading */}
         <SectionHeading
           badge="CLI WORKFLOW"
@@ -110,7 +110,7 @@ const Workflow = () => {
         {/* Desktop grid layout */}
         <div
           className={cn(
-            'grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mt-12',
+            'grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mt-12 relative',
           )}
         >
           {/* Left/Center dynamic SVG wire map */}
@@ -229,7 +229,7 @@ const Workflow = () => {
               />
               <div
                 className={cn(
-                  'font-mono text-[9px] text-zinc-500 mt-2 uppercase tracking-wider bg-zinc-950 px-1.5 py-0.5 rounded-none border border-zinc-900 whitespace-nowrap',
+                  'font-mono text-[8px] text-zinc-500 mt-2 uppercase tracking-wider bg-zinc-950 px-1.5 py-0.5 rounded-none border border-zinc-900 whitespace-nowrap',
                 )}
               >
                 CLI Core
@@ -337,6 +337,40 @@ const Workflow = () => {
                   )}
                 ></span>
               </span>
+            </div>
+
+            {/* Dynamic Physical Connection Bridge (Bridges Left & Right Blocks) */}
+            <div
+              className={cn(
+                'hidden lg:block absolute left-full top-[50%] -translate-y-1/2 w-12 h-[2px] z-20 overflow-visible',
+              )}
+            >
+              {/* Glowing Bridge Line */}
+              <div
+                className={cn(
+                  'w-full h-full transition-all duration-500 animate-pulse',
+                  isScaffoldsActive
+                    ? 'bg-linear-to-r from-orange-500 to-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.6)]'
+                    : 'bg-linear-to-r from-orange-500 to-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.6)]',
+                )}
+              />
+
+              {/* Floating Real-time status text badge */}
+              <div
+                className={cn(
+                  'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2.5 py-0.5 bg-black border text-[8px] font-mono whitespace-nowrap uppercase tracking-widest transition-all duration-300 rounded-none font-bold',
+                  isScaffoldsActive
+                    ? 'border-orange-500 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.3)]'
+                    : 'border-orange-500 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.3)]',
+                )}
+              >
+                {activeFeature.id === 1 && 'Scaffolding Next.js'}
+                {activeFeature.id === 2 && 'Scaffolding Vite'}
+                {activeFeature.id === 3 && 'Deploying Express'}
+                {activeFeature.id === 4 && 'Injecting Flat ESLint'}
+                {activeFeature.id === 5 && 'Applying Prettier'}
+                {activeFeature.id === 6 && 'Activating Git Hooks'}
+              </div>
             </div>
           </div>
 

@@ -1,0 +1,169 @@
+# Morax — Next-Gen `pnpm` Monorepo & Workspace Scaffolder
+
+> A highly polished, interactive CLI that bootstraps custom, modern, high-performance pnpm workspaces in seconds.
+
+## Metadata
+- **URL**: [https://morax.elitedev.space](https://morax.elitedev.space)
+- **NPM Package**: [create-morax](https://www.npmjs.com/package/create-morax) / `@elitedv/morax`
+- **GitHub**: [AshutoshDM1/Elite-CLI](https://github.com/AshutoshDM1/Elite-CLI)
+- **Primary Stack**: Node.js, TypeScript, `pnpm` Workspaces, Turborepo, Next.js, Express/Hono, Tailwind CSS, Shadcn UI, Prisma/Drizzle.
+
+---
+
+## The Philosophy & The Problem
+
+In the modern JavaScript/TypeScript ecosystem, **`pnpm` Workspaces (Monorepos)** are the golden standard for organizing multiple apps (e.g., Next.js, Vite/React, Hono API) and shared libraries (UI components, DB schemas, eslint, configs) in a single repository.
+
+However, **there is currently no official CLI to initialize or bootstrap a pnpm workspace.**
+
+Developers have to manually:
+1. Initialize a blank root `package.json` with `"private": true`.
+2. Write a custom `pnpm-workspace.yaml`.
+3. Scaffold `apps/` and `packages/` folders manually.
+4. Set up workspace symlinking/references (`workspace:*`).
+5. Wire up shared configurations (`tsconfig`, `eslint`, `tailwind`) across all sub-directories.
+
+While rigid templates exist (e.g., standard `create-turbo` configurations), they are static and hard to customize.
+
+**Morax bridges this gap by offering a beautiful, interactive CLI that dynamically scaffolds custom, modern pnpm workspaces in seconds.**
+
+---
+
+## Quick Start
+
+Initialize your custom workspace instantly by running:
+
+```bash
+npm create morax@latest
+# or
+pnpm create morax
+# or
+bun create morax
+```
+
+Once Morax finishes bootstrapping your monorepo, navigate into the directory and launch the unified development server:
+
+```bash
+cd my-morax-monorepo
+pnpm dev
+```
+
+---
+
+## Architecture: Dynamic Workspace Orchestration
+
+Instead of copying outdated static boilerplate folders, Morax acts as a **smart orchestrator** of `pnpm`, `Turborepo`, and official framework CLIs. It builds a fresh, modern, cohesive monorepo dynamically:
+
+```
+[User runs npm create morax@latest]
+         │
+         ▼
+ 1. Workspace Configuration Prompt
+    • "What is the name of your monorepo?"
+    • "Which apps would you like inside apps/? (Next.js, Vite+React, Express/Hono API)"
+    • "Which shared packages in packages/? (UI component library, DB schemas, Configs, Utils)"
+         │
+         ▼
+ 2. Bootstrap Workspace Root
+    • Creates directory, registers `pnpm-workspace.yaml`, and configures root package.json.
+    • Sets up Turborepo (`turbo.json`) for caching and lightning-fast cross-app builds.
+         │
+         ▼
+ 3. Scaffold Applications (Dynamic Framework Execution)
+    • Navigates to `apps/` and executes native, official generators:
+      ├── Next.js: `npx create-next-app@latest web --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"`
+      └── Vite/React: `npm create vite@latest desktop-client --template react-ts`
+         │
+         ▼
+ 4. Scaffold Shared Libraries & Injections
+    • Generates internal shared packages inside `packages/`:
+      ├── `packages/typescript-config`: Shared tsconfig base files
+      ├── `packages/eslint-config`: Shared linting base files
+      ├── `packages/ui`: Component library (dynamically installs and runs `shadcn@latest init`)
+      └── `packages/db`: Shared Prisma or Drizzle schema and client
+         │
+         ▼
+ 5. Automatic Dependency Linking & Dependency Resolution
+    • Programmatically links internal packages (e.g., adding `"@workspace/ui": "workspace:*"` to Next.js app package.json).
+    • Executes `pnpm install` at the workspace root to resolve all workspace references automatically.
+```
+
+### Why Dynamic Scaffolding is Better:
+1. **Never Outdated**: By running standard CLI commands dynamically (e.g., `create-next-app` or `shadcn init`), Morax guarantees you always get the latest framework template versions without the maintainers having to manually update boilerplate files.
+2. **Infinite Flexibility**: The user chooses precisely what to include, and Morax builds and binds them.
+
+---
+
+## Structure of the Generated Workspace
+
+```
+my-monorepo/
+├── apps/
+│   ├── web/                 # Next.js Application
+│   └── api/                 # Express or Hono Backend Application
+├── packages/
+│   ├── ui/                  # Shared UI components (Tailwind + Shadcn)
+│   ├── db/                  # Shared DB client (Prisma/Drizzle + Schema)
+│   ├── typescript-config/   # Shared TypeScript configuration base
+│   └── eslint-config/       # Shared linting rules
+├── pnpm-workspace.yaml      # Declares pnpm packages directories
+├── package.json             # Root private configuration & runner scripts
+├── turbo.json               # Turborepo task pipeline configuration
+└── pnpm-lock.yaml           # Workspace-wide lockfile
+```
+
+---
+
+## Technical Details
+
+### 1. `pnpm-workspace.yaml` Setup
+Declares target directories for workspaces:
+```yaml
+packages:
+  - 'apps/*'
+  - 'packages/*'
+```
+
+### 2. Turborepo Configuration
+Enables caching and task pipeline management for `build`, `dev`, `lint`, and type-checking:
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "dist/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}
+```
+
+### 3. Automatic Dependency Wiring
+Inside sub-projects (e.g., `apps/web/package.json`), dependencies are programmatically wired using local workspace links:
+```json
+{
+  "dependencies": {
+    "@workspace/ui": "workspace:*",
+    "@workspace/db": "workspace:*"
+  }
+}
+```
+This lets you import shared code cleanly:
+```tsx
+import { Button } from "@workspace/ui";
+import { db } from "@workspace/db";
+```
+
+### 4. Setup Lifecycle
+1. User invokes `npm create morax@latest`.
+2. Configures target path and queries user options via `prompts`.
+3. Files setup sequentially: Root configuration files -> Sub-applications via child processes -> Shared packages directories.
+4. Auto-injects cross-package references.
+5. Runs root-level `pnpm install` to lock and symlink.

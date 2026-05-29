@@ -12,8 +12,86 @@ const fira_code = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  title: 'Morax',
-  description: 'Morax Cli a pnpm Workspaces initilizer tool',
+  metadataBase: new URL('https://morax.elitedev.space'),
+  title: {
+    default: 'Morax — Next-Gen pnpm Workspace & Monorepo Orchestrator',
+    template: '%s | Morax',
+  },
+  description:
+    'A highly polished, interactive CLI that instantly bootstraps modern, high-performance pnpm workspaces. Programmatically configure and link Next.js frontends, modular Express APIs, ESLint Flat configs, Prettier formatter, and Husky hooks concurrently.',
+  keywords: [
+    'pnpm workspaces',
+    'monorepo orchestrator',
+    'create-morax',
+    'next.js scaffolding',
+    'vite react template',
+    'express ts api',
+    'typescript monorepo',
+    'eslint flat config',
+    'prettier linter',
+    'husky git hooks',
+    'developer tooling',
+    'scaffolder',
+  ],
+  authors: [{ name: 'AshutoshDM' }],
+  creator: 'AshutoshDM',
+  icons: {
+    icon: [
+      { url: '/favicon/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    shortcut: '/favicon/favicon.svg',
+    apple: [
+      {
+        url: '/favicon/apple-touch-icon.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
+  },
+  manifest: '/favicon/site.webmanifest',
+  alternates: {
+    canonical: 'https://morax.elitedev.space',
+  },
+  openGraph: {
+    title: 'Morax — Next-Gen pnpm Workspace & Monorepo Orchestrator',
+    description:
+      'Instantly bootstrap and link custom, high-performance pnpm workspaces. Configure framework frontends, typescript backend APIs, linters, and hooks concurrently.',
+    url: 'https://morax.elitedev.space',
+    siteName: 'Morax',
+    images: [
+      {
+        url: '/morax-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Morax — The Next-Generation Workspace Scaffolder',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Morax — Next-Gen pnpm Workspace Monorepo Orchestrator',
+    description:
+      'Instantly bootstrap and link custom, high-performance pnpm workspaces. Configure framework frontends, typescript backend APIs, linters, and hooks concurrently.',
+    images: ['/morax-image.png'],
+    creator: '@AshutoshDM_1',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      noimageindex: false,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({

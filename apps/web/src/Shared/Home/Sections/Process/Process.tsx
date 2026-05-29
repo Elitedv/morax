@@ -5,7 +5,7 @@ import ProcessCards from './ProcessCards';
 
 const Process = () => {
   return (
-    <Section className="py-24 text-white">
+    <Section id="process" className="py-24 text-white">
       <SectionHeading
         badge="PROCESS"
         title="How Morax Works"

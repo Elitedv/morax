@@ -5,6 +5,8 @@ import MoraxImage from './Sections/MoraxImage';
 import Process from './Sections/Process/Process';
 import Features from './Sections/Features/Features';
 import Workflow from './Sections/Workflow/Workflow';
+import CTA from '../CTA/CTA';
+import Footer from '../Footer/Footer';
 
 const Home = () => {
   const navItems = [
@@ -21,6 +23,8 @@ const Home = () => {
         <Process />
         <Features />
         <Workflow />
+        <CTA />
+        <Footer />
       </BackgroundLines>
     </div>
   );
