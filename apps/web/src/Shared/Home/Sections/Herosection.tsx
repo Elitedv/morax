@@ -10,7 +10,7 @@ const Herosection = () => {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText('npx morax init');
+      await navigator.clipboard.writeText('npm create morax@latest');
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
