@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import BackgroundLines from '@/Shared/BackgroundLines/BackgroundLines';
 import { Copy, Check } from 'lucide-react';
+import Section from '@/Shared/Seaction/Section';
 
 const Herosection = () => {
   const [copied, setCopied] = useState(false);
@@ -18,23 +19,20 @@ const Herosection = () => {
   };
 
   return (
-    <BackgroundLines>
+    <Section>
       <div className="min-h-[500px] flex flex-col justify-center py-10">
-        <h1 className="text-6xl text-white leading-18">
-          The Ultimate Toolkit for
-        </h1>
-        <h2 className="text-6xl text-white leading-18">
-          Monorepo
-          <span className="text-orange-500 ml-4 font-semibold">
-            PNPM Workspaces
-          </span>
-        </h2>
-        {/* <p className="text-zinc-300 font-light text-lg mt-4 max-w-4xl leading-relaxed">
-                    Morax <span className="text-orange-500" >accelerate</span> your development cycle. <span className="text-orange-500" >Initilalize</span> production-ready, type-safe, and highly optimized multi-package workspace structures with a single command. <span className="text-orange-500" >Ultimate Toolkit for Monorepo PNPM Workspaces</span>
-                </p> */}
+        <div className="text-3xl md:text-5xl lg:text-6xl lg:leading-18">
+          <h1 className="text-white">The Fastest Way to Start a</h1>
+          <h2 className="text-white">
+            Monorepo
+            <span className="text-orange-500 ml-4 font-semibold">
+              PNPM Workspaces
+            </span>
+          </h2>
+        </div>
 
         {/* CLI Download Btn */}
-        <div className="mt-10 w-full max-w-xs">
+        <div className="mt-10 w-full max-w-xs font-fira-code">
           <div
             onClick={handleCopy}
             className="flex items-center justify-between px-6 py-4 bg-zinc-900/60 hover:bg-zinc-950 border border-white/8 hover:border-white/15 font-light text-[14px] text-zinc-300 cursor-pointer transition-all duration-300 select-none group w-full shadow-lg"
@@ -57,7 +55,7 @@ const Herosection = () => {
           </div>
         </div>
       </div>
-    </BackgroundLines>
+    </Section>
   );
 };
 

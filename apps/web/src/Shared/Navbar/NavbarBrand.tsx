@@ -17,7 +17,7 @@ export const NavbarBrand = ({
     <Link
       href={href}
       className={cn(
-        'text-[15px] font-semibold tracking-tight text-white transition-opacity duration-200 hover:opacity-80 flex items-center gap-2',
+        'text-[15px] tracking-wide text-white transition-opacity duration-200 hover:opacity-80 flex items-center gap-2',
         className,
       )}
     >

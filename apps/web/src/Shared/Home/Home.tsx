@@ -1,6 +1,8 @@
+import BackgroundLines from '../BackgroundLines/BackgroundLines';
 import Navbar from '../Navbar';
 import Herosection from './Sections/Herosection';
 import MoraxImage from './Sections/MoraxImage';
+import Process from './Sections/Process/Process';
 
 const Home = () => {
   const navItems = [
@@ -10,9 +12,12 @@ const Home = () => {
 
   return (
     <div className="bg-black min-h-screen">
-      <Navbar navItems={navItems} />
-      <Herosection />
-      <MoraxImage />
+      <BackgroundLines>
+        <Navbar navItems={navItems} />
+        <Herosection />
+        <MoraxImage />
+        <Process />
+      </BackgroundLines>
     </div>
   );
 };

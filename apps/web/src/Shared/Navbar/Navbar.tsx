@@ -71,7 +71,7 @@ const Navbar = ({ navItems }: NavbarProps) => {
 
       <NavbarWraper.SubBar>
         <NavbarWraper.SubBarItem colIndex={1} align="left">
-          PNPM Workspaces
+          Built for PNPM Workspaces
         </NavbarWraper.SubBarItem>
         <NavbarWraper.SubBarItem colIndex={8} align="right" status={true}>
           Current v1.0.4
