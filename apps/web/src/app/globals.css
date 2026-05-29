@@ -6,6 +6,7 @@
 
 @theme {
   --font-inter: var(--font-inter);
+  --font-lexend: var(--font-lexend);
   --font-fira-code: var(--font-fira-code);
   --animate-workflow-dash: workflow-dash 0.9s linear infinite;
 
@@ -139,6 +140,6 @@
   }
 
   html {
-    @apply font-inter;
+    @apply font-lexend;
   }
 }

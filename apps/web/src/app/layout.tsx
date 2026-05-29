@@ -2,8 +2,11 @@ import type { Metadata } from 'next';
 import { Inter, Fira_Code } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
+import FontChanger, { FontInitializer } from '@/Shared/FontChanger/FontChanger';
+import { Lexend } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend' });
 
 const fira_code = Fira_Code({
   subsets: ['latin'],
@@ -14,7 +17,7 @@ const fira_code = Fira_Code({
 export const metadata: Metadata = {
   metadataBase: new URL('https://morax.elitedev.space'),
   title: {
-    default: 'Morax — Next-Gen pnpm Workspace & Monorepo Orchestrator',
+    default: 'Morax',
     template: '%s | Morax',
   },
   description:
@@ -62,7 +65,7 @@ export const metadata: Metadata = {
     siteName: 'Morax',
     images: [
       {
-        url: '/morax-image.png',
+        url: '/og-image.webp',
         width: 1200,
         height: 630,
         alt: 'Morax — The Next-Generation Workspace Scaffolder',
@@ -76,7 +79,7 @@ export const metadata: Metadata = {
     title: 'Morax — Next-Gen pnpm Workspace Monorepo Orchestrator',
     description:
       'Instantly bootstrap and link custom, high-performance pnpm workspaces. Configure framework frontends, typescript backend APIs, linters, and hooks concurrently.',
-    images: ['/morax-image.png'],
+    images: ['/og-image.webp'],
     creator: '@AshutoshDM_1',
   },
   robots: {
@@ -107,13 +110,24 @@ export default function RootLayout({
         'antialiased',
         inter.variable,
         fira_code.variable,
+        lexend.variable,
       )}
     >
       <body
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-black"
       >
+        {process.env.NODE_ENV === 'development' && (
+          <>
+            <FontInitializer />
+          </>
+        )}
         {children}
+        {process.env.NODE_ENV === 'development' && (
+          <>
+            <FontChanger />
+          </>
+        )}
       </body>
     </html>
   );
