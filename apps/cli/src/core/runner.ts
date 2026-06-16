@@ -162,14 +162,14 @@ async function askServerorFrontendInclue() {
     message: 'Which backend/frontend applications would you like to set up?',
     options: [
       {
-        value: 'server',
-        label: 'Express.Backend',
-        hint: 'Scaffold Express backend in apps/server',
-      },
-      {
         value: 'web',
         label: 'Frontend Web App',
         hint: 'Scaffold Next.js or React (Vite) frontend in apps/web',
+      },
+      {
+        value: 'server',
+        label: 'Backend Server',
+        hint: 'Scaffold Express backend in apps/server',
       },
     ],
     required: false,
