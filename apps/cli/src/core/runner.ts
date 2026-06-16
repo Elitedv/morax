@@ -5,6 +5,8 @@ import pc from 'picocolors';
 import { startCli } from './startcli.js';
 import { promptWorkspaceName } from './workspaceName.js';
 import { makeDirectories } from '../tasks/directories.js';
+import { runReactScaffolder } from './react-runner.js';
+import { runNextScaffolder } from './next-runner.js';
 import { runPrettierSetup } from '../tasks/prettier.js';
 import { runEslintSetup } from '../tasks/eslint.js';
 import { runTypescriptSetup } from '../tasks/typescript.js';
@@ -17,13 +19,27 @@ import { setupReadme } from '../tasks/addreadme.js';
 import addNextjs from './web.js';
 import handleCancel from '../utils/isCancel.js';
 
-export async function runWorkspaceScaffolder() {
+export async function runWorkspaceScaffolder(
+  options: { react?: boolean; next?: boolean } = {},
+) {
   // 1. Greet and display premium logo
   startCli();
 
-  // 2. Prompt for Name (Optional, defaults to morax-workspace)
-  const name = await promptWorkspaceName();
+  const isMonorepo = !options.react && !options.next;
+
+  // 2. Prompt for Name (Optional, defaults to morax-workspace or my-app)
+  const name = await promptWorkspaceName(isMonorepo);
   const projectPath = path.join(process.cwd(), name);
+
+  if (options.react) {
+    await runReactScaffolder(name, projectPath);
+    return;
+  }
+
+  if (options.next) {
+    await runNextScaffolder(name, projectPath);
+    return;
+  }
 
   // 3. Prompt and execute directories and workspace config generation
   await makeDirectories(name, projectPath);
@@ -35,8 +51,10 @@ export async function runWorkspaceScaffolder() {
   const gitInitialized = await runGitSetup(projectPath);
 
   // Ask which tools and features to include upfront
-  const selectedTools = await askWhichToolToInclude();
   const selectedApps = await askServerorFrontendInclue();
+  const selectedTools = await askWhichToolToInclude(
+    selectedApps.includes('server'),
+  );
 
   // 5. Execute Prettier setup if selected
   if (selectedTools.includes('prettier')) {
@@ -89,15 +107,24 @@ export async function runWorkspaceScaffolder() {
   endCli(name, projectPath);
 }
 
-async function askWhichToolToInclude() {
-  const tools = await multiselect({
-    message: 'Which configurations/linter tools would you like to set up?',
-    options: [
-      {
-        value: 'prettier',
-        label: 'Prettier',
-        hint: 'Code formatter rules & auto-formatting script',
-      },
+async function askWhichToolToInclude(hasServer: boolean) {
+  const options = [
+    {
+      value: 'prettier',
+      label: 'Prettier',
+      hint: 'Code formatter rules & auto-formatting script',
+    },
+    {
+      value: 'husky',
+      label: 'Husky',
+      hint: 'Git pre-commit hooks setup (requires Git)',
+    },
+  ];
+
+  if (!hasServer) {
+    options.splice(
+      1,
+      0,
       {
         value: 'eslint',
         label: 'ESLint',
@@ -108,17 +135,26 @@ async function askWhichToolToInclude() {
         label: 'TypeScript',
         hint: 'Extendable shared TypeScript configurations',
       },
-      {
-        value: 'husky',
-        label: 'Husky',
-        hint: 'Git pre-commit hooks setup (requires Git)',
-      },
-    ],
+    );
+  }
+
+  const tools = await multiselect({
+    message: hasServer
+      ? 'ESLint & TypeScript are required for the Express backend. Select additional configurations/tools:'
+      : 'Which configurations/linter tools would you like to set up?',
+    options,
     required: false,
   });
 
   handleCancel(tools);
-  return tools as string[];
+
+  const selectedTools = tools as string[];
+  if (hasServer) {
+    if (!selectedTools.includes('eslint')) selectedTools.push('eslint');
+    if (!selectedTools.includes('typescript')) selectedTools.push('typescript');
+  }
+
+  return selectedTools;
 }
 
 async function askServerorFrontendInclue() {
@@ -127,7 +163,7 @@ async function askServerorFrontendInclue() {
     options: [
       {
         value: 'server',
-        label: 'Express.js Backend',
+        label: 'Express.Backend',
         hint: 'Scaffold Express backend in apps/server',
       },
       {

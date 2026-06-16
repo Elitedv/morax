@@ -7,7 +7,7 @@ import { runCommand } from '../utils/exec.js';
 
 export async function promptServer() {
   return await confirm({
-    message: 'Do you want to setup a basic Express backend in apps/server?',
+    message: 'Do you want to setup a Express backend in apps/server?',
     initialValue: true,
   });
 }

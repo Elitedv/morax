@@ -1,16 +1,8 @@
-import { confirm, spinner } from '@clack/prompts';
+import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { runCommand } from '../utils/exec.js';
-
-export async function promptEslint() {
-  return await confirm({
-    message: 'Do you want to setup ESLint linting in packages/eslint?',
-    initialValue: true,
-  });
-}
 
 export async function setupEslint(projectPath: string) {
   const eslintDir = path.join(projectPath, 'packages', 'eslint');
@@ -121,24 +113,16 @@ export async function runEslintSetup(projectPath: string) {
     return;
   }
 
-  const eslintPrompt = await promptEslint();
-
-  handleCancel(eslintPrompt);
-
-  if (eslintPrompt) {
-    const s = spinner();
-    console.log('\n');
-    s.start('Setting up modular ESLint in packages/eslint...');
-    try {
-      await setupEslint(projectPath);
-      s.stop(
-        pc.green('✔ Success: Modular ESLint configured in packages/eslint'),
-      );
-    } catch (error: any) {
-      s.stop(pc.red('✖ Failed: ESLint setup failed'));
-      console.error(pc.red(`\nError details: ${error.message || error}`));
-      process.exit(1);
-    }
-    console.log('\n');
+  const s = spinner();
+  console.log('\n');
+  s.start('Setting up modular ESLint in packages/eslint...');
+  try {
+    await setupEslint(projectPath);
+    s.stop(pc.green('✔ Success: Modular ESLint configured in packages/eslint'));
+  } catch (error: any) {
+    s.stop(pc.red('✖ Failed: ESLint setup failed'));
+    console.error(pc.red(`\nError details: ${error.message || error}`));
+    process.exit(1);
   }
+  console.log('\n');
 }

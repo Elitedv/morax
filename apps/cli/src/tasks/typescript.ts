@@ -1,16 +1,8 @@
-import { confirm, spinner } from '@clack/prompts';
+import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { runCommand } from '../utils/exec.js';
-
-export async function promptTypescript() {
-  return await confirm({
-    message: 'Do you want to setup TypeScript config in packages/typescript?',
-    initialValue: true,
-  });
-}
 
 export async function setupTypescript(projectPath: string) {
   const tsDir = path.join(projectPath, 'packages', 'typescript');
@@ -67,26 +59,20 @@ export async function runTypescriptSetup(projectPath: string) {
     return;
   }
 
-  const tsPrompt = await promptTypescript();
-
-  handleCancel(tsPrompt);
-
-  if (tsPrompt) {
-    const s = spinner();
-    console.log('\n');
-    s.start('Setting up modular TypeScript config in packages/typescript...');
-    try {
-      await setupTypescript(projectPath);
-      s.stop(
-        pc.green(
-          '✔ Success: Modular TypeScript config configured in packages/typescript',
-        ),
-      );
-    } catch (error: any) {
-      s.stop(pc.red('✖ Failed: TypeScript config setup failed'));
-      console.error(pc.red(`\nError details: ${error.message || error}`));
-      process.exit(1);
-    }
-    console.log('\n');
+  const s = spinner();
+  console.log('\n');
+  s.start('Setting up modular TypeScript config in packages/typescript...');
+  try {
+    await setupTypescript(projectPath);
+    s.stop(
+      pc.green(
+        '✔ Success: Modular TypeScript config configured in packages/typescript',
+      ),
+    );
+  } catch (error: any) {
+    s.stop(pc.red('✖ Failed: TypeScript config setup failed'));
+    console.error(pc.red(`\nError details: ${error.message || error}`));
+    process.exit(1);
   }
+  console.log('\n');
 }

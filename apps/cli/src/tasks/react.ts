@@ -12,7 +12,9 @@ function runInteractiveCommand(
   cwd: string,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const fullCommand =
+      args.length > 0 ? `${command} ${args.join(' ')}` : command;
+    const child = spawn(fullCommand, [], {
       cwd,
       stdio: 'inherit',
       shell: true,
@@ -37,8 +39,10 @@ function runInteractiveCommand(
   });
 }
 
-export async function setupReact(projectPath: string) {
-  const appsDir = path.join(projectPath, 'apps');
+export async function setupReact(projectPath: string, isMonorepo = true) {
+  const appsDir = isMonorepo
+    ? path.join(projectPath, 'apps')
+    : path.dirname(projectPath);
 
   // 1. Print important warnings to prevent blocking
   console.log(pc.magentaBright('\n🔷 IMPORTANT INSTRUCTIONS:'));
@@ -95,9 +99,78 @@ export async function setupReact(projectPath: string) {
       );
     }
 
+    // Always configure Path Aliases & @types/node right away so import aliases are ready
+    const aliasSpinner = spinner();
+    aliasSpinner.start('Configuring import aliases and Node types...');
+    try {
+      // Inject @types/node into package.json devDependencies
+      const pkgPath = path.join(webDir, 'package.json');
+      try {
+        const pkgRaw = await fsPromises.readFile(pkgPath, 'utf8');
+        const pkg = JSON.parse(pkgRaw);
+        pkg.devDependencies = pkg.devDependencies || {};
+        pkg.devDependencies['@types/node'] = '^20.11.0';
+        await fsPromises.writeFile(
+          pkgPath,
+          JSON.stringify(pkg, null, 2),
+          'utf8',
+        );
+      } catch {}
+
+      // tsconfig.json / tsconfig.app.json
+      const tsconfigPaths = [
+        path.join(webDir, 'tsconfig.json'),
+        path.join(webDir, 'tsconfig.app.json'),
+      ];
+      for (const tsPath of tsconfigPaths) {
+        try {
+          let content = await fsPromises.readFile(tsPath, 'utf8');
+          if (content.includes('"compilerOptions"')) {
+            if (!content.includes('"paths"')) {
+              content = content.replace(
+                /("compilerOptions"\s*:\s*\{)/,
+                `$1\n    "baseUrl": ".",\n    "paths": {\n      "@/*": ["./src/*"]\n    },`,
+              );
+              await fsPromises.writeFile(tsPath, content, 'utf8');
+            }
+          } else {
+            content = content.replace(
+              /^(\s*\{)/,
+              `$1\n  "compilerOptions": {\n    "baseUrl": ".",\n    "paths": {\n      "@/*": ["./src/*"]\n    }\n  },`,
+            );
+            await fsPromises.writeFile(tsPath, content, 'utf8');
+          }
+        } catch {}
+      }
+
+      // vite.config.ts
+      const viteConfigPath = path.join(webDir, 'vite.config.ts');
+      try {
+        let content = await fsPromises.readFile(viteConfigPath, 'utf8');
+        if (!content.includes("import path from 'path'")) {
+          content = "import path from 'path';\n" + content;
+        }
+        if (!content.includes('resolve:')) {
+          content = content.replace(
+            /(plugins:\s*\[[^\]]*\]),?/,
+            `$1,\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  }`,
+          );
+        }
+        await fsPromises.writeFile(viteConfigPath, content, 'utf8');
+      } catch {}
+
+      aliasSpinner.stop(
+        pc.green('✔ Success: Import aliases and Node types configured'),
+      );
+    } catch (err: any) {
+      aliasSpinner.stop(pc.red('✖ Failed: Import alias configuration failed'));
+    }
+
     console.log(
       pc.green(
-        `\n✔ Success: Vite React frontend configured in apps/${createdDirName}\n`,
+        isMonorepo
+          ? `\n✔ Success: Vite React frontend configured in apps/${createdDirName}\n`
+          : `\n✔ Success: Vite React frontend configured at root\n`,
       ),
     );
 
@@ -196,58 +269,6 @@ export async function setupReact(projectPath: string) {
     }
 
     if (setupShadcnPrompt) {
-      // 7. Configure Path Aliases inside tsconfig / vite configs first as required by shadcn UI preflight
-      const s = spinner();
-      s.start('Configuring path aliases for shadcn UI preflight checks...');
-      try {
-        // tsconfig.json / tsconfig.app.json
-        const tsconfigPaths = [
-          path.join(webDir, 'tsconfig.json'),
-          path.join(webDir, 'tsconfig.app.json'),
-        ];
-        for (const tsPath of tsconfigPaths) {
-          try {
-            let content = await fsPromises.readFile(tsPath, 'utf8');
-            if (content.includes('"compilerOptions"')) {
-              if (!content.includes('"paths"')) {
-                content = content.replace(
-                  /("compilerOptions"\s*:\s*\{)/,
-                  `$1\n    "baseUrl": ".",\n    "paths": {\n      "@/*": ["./src/*"]\n    },`,
-                );
-                await fsPromises.writeFile(tsPath, content, 'utf8');
-              }
-            } else {
-              content = content.replace(
-                /^(\s*\{)/,
-                `$1\n  "compilerOptions": {\n    "baseUrl": ".",\n    "paths": {\n      "@/*": ["./src/*"]\n    }\n  },`,
-              );
-              await fsPromises.writeFile(tsPath, content, 'utf8');
-            }
-          } catch {}
-        }
-
-        // vite.config.ts
-        const viteConfigPath = path.join(webDir, 'vite.config.ts');
-        try {
-          let content = await fsPromises.readFile(viteConfigPath, 'utf8');
-          if (!content.includes("import path from 'path'")) {
-            content = "import path from 'path';\n" + content;
-          }
-          if (!content.includes('resolve:')) {
-            content = content.replace(
-              /(plugins:\s*\[[^\]]*\]),?/,
-              `$1,\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  }`,
-            );
-          }
-          await fsPromises.writeFile(viteConfigPath, content, 'utf8');
-        } catch {}
-
-        s.stop(pc.green('✔ Success: Path aliases successfully configured\n'));
-      } catch (err: any) {
-        s.stop(pc.red('✖ Failed: Path alias configuration failed'));
-        throw err;
-      }
-
       // 8. Prompt for preset and initialize shadcn UI
       const hasPreset = await confirm({
         message: 'Do you have a custom shadcn UI preset code?',
@@ -281,10 +302,13 @@ export async function setupReact(projectPath: string) {
       await runInteractiveCommand('pnpm', args, webDir);
       console.log(
         pc.green(
-          `\n✔ Success: shadcn UI successfully initialized in apps/${createdDirName}\n`,
+          isMonorepo
+            ? `\n✔ Success: shadcn UI successfully initialized in apps/${createdDirName}\n`
+            : `\n✔ Success: shadcn UI successfully initialized at root\n`,
         ),
       );
     }
+    return webDir;
   } catch (error: any) {
     console.error(pc.red(`\n✖ Failed: Vite React frontend setup failed`));
     console.error(pc.red(`Error details: ${error.message || error}\n`));
