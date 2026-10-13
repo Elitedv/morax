@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "morax",
   "description": "Morax is a next-generation CLI tool for scaffolding modern, high-performance pnpm monorepos and workspaces.",
   "private": false,
@@ -7,9 +7,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "pnpm --filter morax-web dev",
-    "build": "pnpm --filter morax-web build",
-    "start": "pnpm --filter morax-web start",
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "start": "pnpm --filter web start",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

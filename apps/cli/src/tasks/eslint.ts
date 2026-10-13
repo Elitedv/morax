@@ -1,4 +1,4 @@
-import { spinner } from '@clack/prompts';
+﻿import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
@@ -43,7 +43,7 @@ export async function setupEslint(projectPath: string) {
 
   // 4. Run pnpm add -D dynamically to fetch and install only the latest packages
   await runCommand(
-    'pnpm add -D eslint @eslint/js @eslint/json globals typescript-eslint',
+    'pnpm add -D eslint @eslint/js @eslint/json globals typescript-eslint jiti typescript@^5',
     { cwd: eslintDir },
   );
 

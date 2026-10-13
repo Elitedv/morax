@@ -1,4 +1,4 @@
-import { spinner } from '@clack/prompts';
+﻿import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
@@ -39,11 +39,11 @@ export async function setupTypescript(projectPath: string) {
     'utf8',
   );
 
-  // 4. Install typescript package dynamically as devDependency
-  await runCommand(
-    'cd ../.. && pnpm add -D typescript -w && cd packages/typescript',
-    { cwd: tsDir, silent: true },
-  );
+  // 4. Install typescript package dynamically as devDependency at workspace root
+  await runCommand('pnpm add -D typescript@^5 -w', {
+    cwd: projectPath,
+    silent: true,
+  });
 
   // 5. Initialize tsconfig.json using npx tsc --init
   await runCommand('npx tsc --init', { cwd: tsDir });

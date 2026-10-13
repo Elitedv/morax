@@ -1,4 +1,4 @@
-import pc from 'picocolors';
+﻿import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -99,23 +99,30 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
       );
     }
 
-    // Always configure Path Aliases & @types/node right away so import aliases are ready
-    const aliasSpinner = spinner();
-    aliasSpinner.start('Configuring import aliases and Node types...');
-    try {
-      // Inject @types/node into package.json devDependencies
-      const pkgPath = path.join(webDir, 'package.json');
+    // Ensure that in a monorepo the web package name is always "web"
+    if (isMonorepo) {
       try {
+        const pkgPath = path.join(webDir, 'package.json');
         const pkgRaw = await fsPromises.readFile(pkgPath, 'utf8');
         const pkg = JSON.parse(pkgRaw);
-        pkg.devDependencies = pkg.devDependencies || {};
-        pkg.devDependencies['@types/node'] = '^20.11.0';
+        pkg.name = 'web';
         await fsPromises.writeFile(
           pkgPath,
           JSON.stringify(pkg, null, 2),
           'utf8',
         );
       } catch {}
+    }
+
+    // Always configure Path Aliases & @types/node right away so import aliases are ready
+    const aliasSpinner = spinner();
+    aliasSpinner.start('Configuring import aliases and Node types...');
+    try {
+      // Install @types/node dynamically into devDependencies
+      await runCommand('pnpm add -D @types/node', {
+        cwd: webDir,
+        silent: true,
+      });
 
       // tsconfig.json / tsconfig.app.json
       const tsconfigPaths = [
@@ -196,27 +203,15 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
         'Installing Tailwind CSS v4, Vite integration, and Node types...',
       );
       try {
-        // 4. Inject dependencies directly into package.json
-        const pkgPath = path.join(webDir, 'package.json');
-        try {
-          const pkgRaw = await fsPromises.readFile(pkgPath, 'utf8');
-          const pkg = JSON.parse(pkgRaw);
-          pkg.dependencies = pkg.dependencies || {};
-          pkg.devDependencies = pkg.devDependencies || {};
-
-          pkg.dependencies['tailwindcss'] = '^4.0.0';
-          pkg.devDependencies['@tailwindcss/vite'] = '^4.0.0';
-          pkg.devDependencies['@types/node'] = '^20.11.0';
-
-          await fsPromises.writeFile(
-            pkgPath,
-            JSON.stringify(pkg, null, 2),
-            'utf8',
-          );
-        } catch {}
-
-        // Install packages via pnpm install
-        await runCommand('pnpm install', { cwd: webDir, silent: true });
+        // 4. Install Tailwind CSS v4 and Vite integration dynamically using pnpm add
+        await runCommand('pnpm add tailwindcss', {
+          cwd: webDir,
+          silent: true,
+        });
+        await runCommand('pnpm add -D @tailwindcss/vite', {
+          cwd: webDir,
+          silent: true,
+        });
 
         s.message('Configuring Vite plugins and Tailwind CSS imports...');
 

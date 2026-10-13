@@ -1,4 +1,4 @@
-import { confirm, spinner } from '@clack/prompts';
+﻿import { confirm, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import handleCancel from '../utils/isCancel.js';
 import fsPromises from 'fs/promises';
@@ -104,7 +104,7 @@ export async function setupServer(projectPath: string) {
 
   // 5. Install dependencies dynamically using pnpm add (fetches latest)
   await runCommand('pnpm add express cors', { cwd: serverDir, silent: false });
-  await runCommand('pnpm add -D @types/express @types/cors tsx typescript', {
+  await runCommand('pnpm add -D @types/express @types/cors tsx typescript@^5', {
     cwd: serverDir,
     silent: false,
   });
