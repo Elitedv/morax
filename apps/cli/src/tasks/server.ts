@@ -1,4 +1,4 @@
-﻿import { confirm, spinner } from '@clack/prompts';
+import { confirm, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import handleCancel from '../utils/isCancel.js';
 import fsPromises from 'fs/promises';
@@ -12,7 +12,10 @@ export async function promptServer() {
   });
 }
 
-export async function setupServer(projectPath: string) {
+export async function setupServer(
+  projectPath: string,
+  linter: string = 'none',
+) {
   const serverDir = path.join(projectPath, 'apps', 'server');
   const srcDir = path.join(serverDir, 'src');
 
@@ -27,14 +30,6 @@ export async function setupServer(projectPath: string) {
   const serverPackageRaw = await fsPromises.readFile(serverPackagePath, 'utf8');
   const serverPkg = JSON.parse(serverPackageRaw);
 
-  // Check if modular ESLint package exists in workspace packages
-  const eslintDir = path.join(projectPath, 'packages', 'eslint');
-  let hasEslint = false;
-  try {
-    await fsPromises.access(eslintDir);
-    hasEslint = true;
-  } catch {}
-
   serverPkg.name = 'server';
   serverPkg.version = '1.0.0';
   serverPkg.private = true;
@@ -45,14 +40,16 @@ export async function setupServer(projectPath: string) {
     build: 'tsc',
     start: 'node dist/index.js',
   };
+
+  if (linter === 'biome') {
+    serverPkg.scripts.lint = 'biome lint .';
+  } else if (linter === 'oxlint') {
+    serverPkg.scripts.lint = 'oxlint .';
+  }
+
   serverPkg.devDependencies = {
     '@config/typescript': 'workspace:*',
   };
-
-  if (hasEslint) {
-    serverPkg.devDependencies['@config/eslint'] = 'workspace:*';
-    serverPkg.scripts['lint'] = 'eslint .';
-  }
 
   // Remove defaults that are not needed
   delete serverPkg.keywords;
@@ -81,33 +78,16 @@ export async function setupServer(projectPath: string) {
     'utf8',
   );
 
-  // If ESLint exists, write the server's eslint.config.ts extending the base config
-  if (hasEslint) {
-    const eslintConfigContent = [
-      "import baseConfig from '@config/eslint';",
-      '',
-      'export default [',
-      '  ...baseConfig,',
-      '  {',
-      '    // Add server-specific overrides if necessary',
-      '  },',
-      '];',
-      '',
-    ].join('\n');
-
-    await fsPromises.writeFile(
-      path.join(serverDir, 'eslint.config.ts'),
-      eslintConfigContent,
-      'utf8',
-    );
-  }
-
   // 5. Install dependencies dynamically using pnpm add (fetches latest)
   await runCommand('pnpm add express cors', { cwd: serverDir, silent: false });
-  await runCommand('pnpm add -D @types/express @types/cors tsx typescript@^5', {
-    cwd: serverDir,
-    silent: false,
-  });
+
+  await runCommand(
+    'pnpm add -D @types/express @types/cors tsx typescript@latest',
+    {
+      cwd: serverDir,
+      silent: false,
+    },
+  );
 
   // 6. Create src/index.ts with premium starter code using CORS and Express
   const indexTsContent = [
@@ -143,7 +123,10 @@ export async function setupServer(projectPath: string) {
   );
 }
 
-export async function runServerSetup(projectPath: string) {
+export async function runServerSetup(
+  projectPath: string,
+  linter: string = 'none',
+) {
   // Ensure the apps folder option was generated/exists
   const appsDir = path.join(projectPath, 'apps');
   try {
@@ -162,7 +145,7 @@ export async function runServerSetup(projectPath: string) {
     console.log('\n');
     s.start('Setting up modular Express backend in apps/server...');
     try {
-      await setupServer(projectPath);
+      await setupServer(projectPath, linter);
       s.stop(
         pc.green(
           '✔ Success: Modular Express backend configured in apps/server',

@@ -1,4 +1,4 @@
-﻿import pc from 'picocolors';
+import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -58,7 +58,7 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
   );
   console.log(
     pc.magentaBright(
-      'This allows Morax CLI to continue automatically configuring your workspace (ESLint, Prettier, Tailwind, packages, etc.)!',
+      'This allows Morax CLI to continue automatically configuring your workspace (Oxlint, Prettier, Tailwind, packages, etc.)!',
     ),
   );
 
@@ -219,7 +219,40 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
         const viteConfigPath = path.join(webDir, 'vite.config.ts');
         try {
           let content = await fsPromises.readFile(viteConfigPath, 'utf8');
-          if (!content.includes('@tailwindcss/vite')) {
+
+          // Check if React Compiler is present (from Vite 7 / create-vite option)
+          const hasReactCompiler =
+            content.includes('reactCompilerPreset') ||
+            content.includes('@rolldown/plugin-babel') ||
+            content.includes('babel({');
+
+          if (hasReactCompiler) {
+            content = [
+              "import path from 'path';",
+              "import tailwindcss from '@tailwindcss/vite';",
+              "import react, { reactCompilerPreset } from '@vitejs/plugin-react';",
+              "import babel from '@rolldown/plugin-babel';",
+              "import { defineConfig } from 'vite';",
+              '',
+              '// https://vite.dev/config/',
+              'export default defineConfig({',
+              '  plugins: [',
+              '    tailwindcss(),',
+              '    react(),',
+              '    babel({',
+              '      presets: [reactCompilerPreset()],',
+              '    }),',
+              '  ],',
+              '  resolve: {',
+              '    alias: {',
+              "      '@': path.resolve(import.meta.dirname, './src'),",
+              '    },',
+              '  },',
+              '});',
+              '',
+            ].join('\n');
+            await fsPromises.writeFile(viteConfigPath, content, 'utf8');
+          } else if (!content.includes('@tailwindcss/vite')) {
             content =
               "import tailwindcss from '@tailwindcss/vite';\n" + content;
 

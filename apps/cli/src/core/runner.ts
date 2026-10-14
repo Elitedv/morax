@@ -1,5 +1,5 @@
 import path from 'path';
-import { spinner, multiselect } from '@clack/prompts';
+import { spinner, multiselect, select } from '@clack/prompts';
 import pc from 'picocolors';
 
 import { startCli } from './startcli.js';
@@ -8,11 +8,13 @@ import { makeDirectories } from '../tasks/directories.js';
 import { runReactScaffolder } from './react-runner.js';
 import { runNextScaffolder } from './next-runner.js';
 import { runPrettierSetup } from '../tasks/prettier.js';
-import { runEslintSetup } from '../tasks/eslint.js';
+import { runOxlintSetup } from '../tasks/oxlint.js';
+import { runBiomeSetup } from '../tasks/biome.js';
 import { runTypescriptSetup } from '../tasks/typescript.js';
 import { runServerSetup } from '../tasks/server.js';
 import { runGitSetup } from '../tasks/git.js';
 import { runHuskySetup } from '../tasks/husky.js';
+import { runLefthookSetup } from '../tasks/lefthook.js';
 import { endCli } from './endcli.js';
 import { runCommand } from '../utils/exec.js';
 import { setupReadme } from '../tasks/addreadme.js';
@@ -50,43 +52,73 @@ export async function runWorkspaceScaffolder(
   // 4. Prompt and execute Git initialization
   const gitInitialized = await runGitSetup(projectPath);
 
-  // Ask which tools and features to include upfront
+  // Ask which apps/servers to set up
   const selectedApps = await askServerorFrontendInclue();
-  const selectedTools = await askWhichToolToInclude(
-    selectedApps.includes('server'),
-  );
 
-  // 5. Execute Prettier setup if selected
-  if (selectedTools.includes('prettier')) {
+  // Ask for Linter
+  const linter = await askLinter();
+
+  // Ask for Formatter
+  const formatter = await askFormatter();
+
+  // Ask for Git Hooks (if Git is initialized)
+  let gitHook = 'none';
+  if (gitInitialized) {
+    gitHook = await askGitHooks();
+  }
+
+  // Ask for TypeScript if server was not selected (if server selected, TS is required)
+  let includeTypescript = selectedApps.includes('server');
+  if (!includeTypescript) {
+    includeTypescript = await askTypescript();
+  }
+
+  // 5. Execute Biome setup if Biome was chosen for either linting or formatting
+  if (linter === 'biome' || formatter === 'biome') {
+    await runBiomeSetup(projectPath, {
+      linter: linter === 'biome',
+      formatter: formatter === 'biome',
+    });
+  }
+
+  // 6. Execute Oxlint setup if selected
+  if (linter === 'oxlint') {
+    await runOxlintSetup(projectPath);
+  }
+
+  // 7. Execute Prettier setup if selected
+  if (formatter === 'prettier') {
     await runPrettierSetup(projectPath);
   }
 
-  // 6. Execute Husky setup if selected and git is initialized
-  if (selectedTools.includes('husky')) {
+  // 8. Execute Git hooks setup (Lefthook or Husky)
+  if (gitHook === 'lefthook') {
+    await runLefthookSetup(
+      projectPath,
+      gitInitialized,
+      formatter !== 'none',
+      linter !== 'none',
+    );
+  } else if (gitHook === 'husky') {
     await runHuskySetup(projectPath, gitInitialized);
   }
 
-  // 7. Execute ESLint setup if selected
-  if (selectedTools.includes('eslint')) {
-    await runEslintSetup(projectPath);
-  }
-
-  // 8. Execute TypeScript setup if selected
-  if (selectedTools.includes('typescript')) {
+  // 9. Execute TypeScript setup if selected
+  if (includeTypescript) {
     await runTypescriptSetup(projectPath);
   }
 
-  // 9. Execute Express Backend setup if selected
+  // 10. Execute Express Backend setup if selected
   if (selectedApps.includes('server')) {
-    await runServerSetup(projectPath);
+    await runServerSetup(projectPath, linter);
   }
 
-  // 10. Execute Next.js/Vite Frontend setup if selected
+  // 11. Execute Next.js/Vite Frontend setup if selected
   if (selectedApps.includes('web')) {
     await addNextjs(projectPath);
   }
 
-  // 11. Run final pnpm install to resolve all workspace configurations and symlinks
+  // 12. Run final pnpm install to resolve all workspace configurations and symlinks
   const s = spinner();
   console.log('\n');
   s.start('Running final workspace package installation...');
@@ -107,54 +139,107 @@ export async function runWorkspaceScaffolder(
   endCli(name, projectPath);
 }
 
-async function askWhichToolToInclude(hasServer: boolean) {
-  const options = [
-    {
-      value: 'prettier',
-      label: 'Prettier',
-      hint: 'Code formatter rules & auto-formatting script',
-    },
-    {
-      value: 'husky',
-      label: 'Husky',
-      hint: 'Git pre-commit hooks setup (requires Git)',
-    },
-  ];
-
-  if (!hasServer) {
-    options.splice(
-      1,
-      0,
+async function askLinter(): Promise<string> {
+  const linter = await select({
+    message: 'Which linter would you like to use?',
+    options: [
       {
-        value: 'eslint',
-        label: 'ESLint',
-        hint: 'Modern Flat Config linter configurations',
+        value: 'oxlint',
+        label: 'Oxlint',
+        hint: 'Blazingly fast Rust linter with bleeding-edge TS support',
       },
       {
-        value: 'typescript',
-        label: 'TypeScript',
-        hint: 'Extendable shared TypeScript configurations',
+        value: 'biome',
+        label: 'Biome',
+        hint: 'Fast Rust linter with rich built-in lint rules',
       },
-    );
-  }
-
-  const tools = await multiselect({
-    message: hasServer
-      ? 'ESLint & TypeScript are required for the Express backend. Select additional configurations/tools:'
-      : 'Which configurations/linter tools would you like to set up?',
-    options,
-    required: false,
+      {
+        value: 'none',
+        label: 'None',
+        hint: 'Skip linter configuration',
+      },
+    ],
+    initialValue: 'oxlint',
   });
 
-  handleCancel(tools);
+  handleCancel(linter);
+  return linter as string;
+}
 
-  const selectedTools = tools as string[];
-  if (hasServer) {
-    if (!selectedTools.includes('eslint')) selectedTools.push('eslint');
-    if (!selectedTools.includes('typescript')) selectedTools.push('typescript');
-  }
+async function askFormatter(): Promise<string> {
+  const formatter = await select({
+    message: 'Which code formatter would you like to use?',
+    options: [
+      {
+        value: 'prettier',
+        label: 'Prettier',
+        hint: 'Industry-standard code formatting (.prettierrc)',
+      },
+      {
+        value: 'biome',
+        label: 'Biome',
+        hint: 'Ultra-fast Rust code formatter',
+      },
+      {
+        value: 'none',
+        label: 'None',
+        hint: 'Skip code formatter',
+      },
+    ],
+    initialValue: 'prettier',
+  });
 
-  return selectedTools;
+  handleCancel(formatter);
+  return formatter as string;
+}
+
+async function askGitHooks(): Promise<string> {
+  const hook = await select({
+    message: 'Which Git hooks manager would you like to set up?',
+    options: [
+      {
+        value: 'lefthook',
+        label: 'Lefthook',
+        hint: 'Fast, powerful cross-platform Git hooks (Go-based)',
+      },
+      {
+        value: 'husky',
+        label: 'Husky',
+        hint: 'Classic Node-based Git pre-commit hooks',
+      },
+      {
+        value: 'none',
+        label: 'None',
+        hint: 'Skip Git hooks setup',
+      },
+    ],
+    initialValue: 'lefthook',
+  });
+
+  handleCancel(hook);
+  return hook as string;
+}
+
+async function askTypescript(): Promise<boolean> {
+  const choice = await select({
+    message: 'Do you want to configure shared TypeScript configurations?',
+    options: [
+      {
+        value: 'yes',
+        label: 'Yes',
+        hint: 'Modular @config/typescript package',
+      },
+      {
+        value: 'no',
+        label: 'No',
+        hint: 'Skip shared TypeScript config',
+      },
+    ],
+    initialValue: 'yes',
+  });
+
+  handleCancel(choice);
+  return choice === 'yes';
 }
 
 async function askServerorFrontendInclue() {
