@@ -12,6 +12,7 @@ import { runOxlintSetup } from '../tasks/oxlint.js';
 import { runBiomeSetup } from '../tasks/biome.js';
 import { runTypescriptSetup } from '../tasks/typescript.js';
 import { runServerSetup } from '../tasks/server.js';
+import { runDatabaseSetup, promptDatabase } from '../tasks/db.js';
 import { runGitSetup } from '../tasks/git.js';
 import { runHuskySetup } from '../tasks/husky.js';
 import { runLefthookSetup } from '../tasks/lefthook.js';
@@ -46,14 +47,14 @@ export async function runWorkspaceScaffolder(
   // 3. Prompt and execute directories and workspace config generation
   await makeDirectories(name, projectPath);
 
-  // Add the root README silently immediately after directory creation
-  await setupReadme(projectPath, name);
-
   // 4. Prompt and execute Git initialization
   const gitInitialized = await runGitSetup(projectPath);
 
   // Ask which apps/servers to set up
   const selectedApps = await askServerorFrontendInclue();
+
+  // Ask for Database (Drizzle ORM or Prisma in packages/db)
+  const dbConfig = await promptDatabase();
 
   // Ask for Linter
   const linter = await askLinter();
@@ -67,8 +68,9 @@ export async function runWorkspaceScaffolder(
     gitHook = await askGitHooks();
   }
 
-  // Ask for TypeScript if server was not selected (if server selected, TS is required)
-  let includeTypescript = selectedApps.includes('server');
+  // Ask for TypeScript if server or db was not selected (if server or db selected, TS is required)
+  let includeTypescript =
+    selectedApps.includes('server') || dbConfig.orm !== 'none';
   if (!includeTypescript) {
     includeTypescript = await askTypescript();
   }
@@ -108,17 +110,28 @@ export async function runWorkspaceScaffolder(
     await runTypescriptSetup(projectPath);
   }
 
-  // 10. Execute Express Backend setup if selected
-  if (selectedApps.includes('server')) {
-    await runServerSetup(projectPath, linter);
+  // 10. Execute Database setup (Drizzle or Prisma) in packages/db if selected
+  if (dbConfig.orm !== 'none') {
+    await runDatabaseSetup(projectPath, dbConfig, linter);
   }
 
-  // 11. Execute Next.js/Vite Frontend setup if selected
+  // 11. Execute Express Backend setup if selected
+  if (selectedApps.includes('server')) {
+    await runServerSetup(projectPath, linter, dbConfig.orm);
+  }
+
+  // 12. Execute Next.js/Vite Frontend setup if selected
   if (selectedApps.includes('web')) {
     await addNextjs(projectPath);
   }
 
-  // 12. Run final pnpm install to resolve all workspace configurations and symlinks
+  // Add the root README with configured packages/apps
+  await setupReadme(projectPath, name, {
+    hasDb: dbConfig.orm !== 'none',
+    orm: dbConfig.orm,
+  });
+
+  // 13. Run final pnpm install to resolve all workspace configurations and symlinks
   const s = spinner();
   console.log('\n');
   s.start('Running final workspace package installation...');
@@ -135,8 +148,11 @@ export async function runWorkspaceScaffolder(
   }
   console.log('\n');
 
-  // 13. Complete and show beautiful finish screen
-  endCli(name, projectPath);
+  // 14. Complete and show beautiful finish screen
+  endCli(name, projectPath, {
+    hasDb: dbConfig.orm !== 'none',
+    orm: dbConfig.orm,
+  });
 }
 
 async function askLinter(): Promise<string> {

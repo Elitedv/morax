@@ -15,9 +15,11 @@ export async function promptServer() {
 export async function setupServer(
   projectPath: string,
   linter: string = 'none',
+  orm: 'drizzle' | 'prisma' | 'none' = 'none',
 ) {
   const serverDir = path.join(projectPath, 'apps', 'server');
   const srcDir = path.join(serverDir, 'src');
+  const hasDb = orm !== 'none';
 
   // 1. Create directory structure apps/server/src recursively
   await fsPromises.mkdir(srcDir, { recursive: true });
@@ -50,6 +52,13 @@ export async function setupServer(
   serverPkg.devDependencies = {
     '@config/typescript': 'workspace:*',
   };
+
+  if (hasDb) {
+    serverPkg.dependencies = {
+      ...(serverPkg.dependencies || {}),
+      '@repo/db': 'workspace:*',
+    };
+  }
 
   // Remove defaults that are not needed
   delete serverPkg.keywords;
@@ -90,9 +99,43 @@ export async function setupServer(
   );
 
   // 6. Create src/index.ts with premium starter code using CORS and Express
+  let dbImport: string[] = [];
+  let dbRoute: string[] = [];
+
+  if (orm === 'drizzle') {
+    dbImport = ["import { db, users } from '@repo/db';"];
+    dbRoute = [
+      '// Example endpoint querying shared database package (Drizzle ORM)',
+      "app.get('/api/users', async (req, res) => {",
+      '  try {',
+      '    const allUsers = await db.select().from(users);',
+      '    res.json({ users: allUsers });',
+      '  } catch (error: any) {',
+      '    res.status(500).json({ error: error.message });',
+      '  }',
+      '});',
+      '',
+    ];
+  } else if (orm === 'prisma') {
+    dbImport = ["import { db } from '@repo/db';"];
+    dbRoute = [
+      '// Example endpoint querying shared database package (Prisma ORM)',
+      "app.get('/api/users', async (req, res) => {",
+      '  try {',
+      '    const allUsers = await db.user.findMany();',
+      '    res.json({ users: allUsers });',
+      '  } catch (error: any) {',
+      '    res.status(500).json({ error: error.message });',
+      '  }',
+      '});',
+      '',
+    ];
+  }
+
   const indexTsContent = [
     "import express from 'express';",
     "import cors from 'cors';",
+    ...dbImport,
     '',
     'const app = express();',
     'const port = process.env.PORT || 3001;',
@@ -110,6 +153,7 @@ export async function setupServer(
     '  });',
     '});',
     '',
+    ...dbRoute,
     'app.listen(port, () => {',
     '  console.log(`🚀 Server is running on http://localhost:${port}`);',
     '});',
@@ -126,6 +170,7 @@ export async function setupServer(
 export async function runServerSetup(
   projectPath: string,
   linter: string = 'none',
+  orm: 'drizzle' | 'prisma' | 'none' = 'none',
 ) {
   // Ensure the apps folder option was generated/exists
   const appsDir = path.join(projectPath, 'apps');
@@ -145,7 +190,7 @@ export async function runServerSetup(
     console.log('\n');
     s.start('Setting up modular Express backend in apps/server...');
     try {
-      await setupServer(projectPath, linter);
+      await setupServer(projectPath, linter, orm);
       s.stop(
         pc.green(
           '✔ Success: Modular Express backend configured in apps/server',
