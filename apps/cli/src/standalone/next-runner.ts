@@ -2,11 +2,11 @@ import path from 'path';
 import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 
-import { setupNextjs } from '../tasks/nextjs.js';
-import { runShadcnSetup } from '../tasks/shadcn.js';
-import { runGitSetup } from '../tasks/git.js';
-import { setupReadme } from '../tasks/addreadme.js';
-import { endCli } from './endcli.js';
+import { setupNextjs } from '../modules/apps/web/nextjs.js';
+import { runShadcnSetup } from '../modules/apps/web/shadcn.js';
+import { runGitSetup } from '../modules/git/git.js';
+import { setupReadme } from '../modules/workspace/readme.js';
+import { endCli } from '../core/endcli.js';
 import { runCommand } from '../utils/exec.js';
 
 export async function runNextScaffolder(name: string, projectPath: string) {
@@ -24,7 +24,6 @@ export async function runNextScaffolder(name: string, projectPath: string) {
 
   // 5. Run final pnpm install to ensure all dependencies are installed
   const installSpinner = spinner();
-  console.log('\n');
   installSpinner.start('Running final package installation...');
   try {
     await runCommand('pnpm install', { cwd: finalProjectPath, silent: true });
@@ -35,7 +34,6 @@ export async function runNextScaffolder(name: string, projectPath: string) {
     installSpinner.stop(pc.red('✖ Warning: Final package installation failed'));
     console.error(pc.red(`\nError details: ${error.message || error}`));
   }
-  console.log('\n');
 
   // 6. Complete and show beautiful finish screen
   endCli(path.basename(finalProjectPath), finalProjectPath);

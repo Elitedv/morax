@@ -1,6 +1,6 @@
-﻿import fsPromises from 'fs/promises';
+import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export async function generateWorkspaceConfig(
   name: string,

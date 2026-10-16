@@ -1,6 +1,6 @@
 import { confirm } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
+import handleCancel from '../../../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -63,31 +63,50 @@ export async function setupNextjs(projectPath: string, isMonorepo = true) {
     appsDir,
   );
 
+  // 3. Rename package name to "web" in apps/web/package.json if monorepo
+  if (isMonorepo) {
+    const webPkgPath = path.join(webDir, 'package.json');
+    try {
+      const webPkgRaw = await fsPromises.readFile(webPkgPath, 'utf8');
+      const webPkg = JSON.parse(webPkgRaw);
+      webPkg.name = 'web';
+      await fsPromises.writeFile(
+        webPkgPath,
+        JSON.stringify(webPkg, null, 2),
+        'utf8',
+      );
+    } catch {}
+  }
   return webDir;
 }
 
-export async function runNextjsSetup(projectPath: string) {
-  // Ensure the apps folder option was generated/exists
-  const appsDir = path.join(projectPath, 'apps');
-  try {
-    await fsPromises.access(appsDir);
-  } catch {
-    // If the apps folder was not scaffolded, we shouldn't attempt to setup Web there
-    return;
+export async function runNextjsSetup(projectPath: string, isMonorepo = true) {
+  // Ensure the apps folder exists before proceeding (if monorepo)
+  if (isMonorepo) {
+    const appsDir = path.join(projectPath, 'apps');
+    try {
+      await fsPromises.access(appsDir);
+    } catch {
+      return;
+    }
   }
 
-  const webPrompt = await promptNextjs();
+  const nextPrompt = await promptNextjs();
 
-  handleCancel(webPrompt);
+  handleCancel(nextPrompt);
 
-  if (webPrompt) {
+  if (nextPrompt) {
     try {
-      await setupNextjs(projectPath);
+      await setupNextjs(projectPath, isMonorepo);
       console.log(
-        pc.green('\n✔ Success: Next.js frontend configured in apps/web\n'),
+        pc.green(
+          isMonorepo
+            ? '\n✔ Success: Next.js frontend application configured in apps/web\n'
+            : '\n✔ Success: Next.js frontend application configured at root\n',
+        ),
       );
     } catch (error: any) {
-      console.error(pc.red(`\n✖ Failed: Next.js frontend setup failed`));
+      console.error(pc.red(`\n✖ Failed: Next.js application setup failed`));
       console.error(pc.red(`Error details: ${error.message || error}\n`));
       process.exit(1);
     }

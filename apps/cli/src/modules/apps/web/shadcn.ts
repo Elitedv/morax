@@ -1,6 +1,6 @@
 import { confirm } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
+import handleCancel from '../../../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';

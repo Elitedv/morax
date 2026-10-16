@@ -1,9 +1,9 @@
 import { confirm, spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
+import handleCancel from '../../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export async function promptGit() {
   return await confirm({
@@ -65,7 +65,6 @@ export async function runGitSetup(projectPath: string): Promise<boolean> {
   let gitInitialized = false;
   if (gitPrompt) {
     const s = spinner();
-    console.log('\n');
     s.start('Initializing Git repository...');
     try {
       await gitInit(projectPath);
@@ -76,7 +75,6 @@ export async function runGitSetup(projectPath: string): Promise<boolean> {
       console.error(pc.red(`\nError details: ${error.message || error}`));
       process.exit(1);
     }
-    console.log('\n');
   }
   return gitInitialized;
 }

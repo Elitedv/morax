@@ -59,7 +59,7 @@ graph TD
 
     C --> E[Scaffold Shared Libraries]
     E --> E1[packages/ui: shadcn init]
-    E --> E2[packages/db: prisma/drizzle init]
+    E --> E2[packages/db: drizzle init]
     E --> E3[packages/configs: tsconfig & eslint]
 
     D1 & D2 & E1 & E2 & E3 --> F[Link Workspace Packages]
@@ -89,7 +89,7 @@ Morax guides you step-by-step to customize your developer experience:
  🔌 [x] Express.js API
 ? Which packages would you like to configure? ›
  🎨 [x] Shared UI Library (Tailwind + Shadcn)
- 🗃️ [x] Shared Database Client (Prisma + PostgreSQL)
+ 🗃️ [x] Shared Database Client (Drizzle + PostgreSQL)
  ⚙️ [x] Shared Linting & TypeScript Configurations
 ```
 

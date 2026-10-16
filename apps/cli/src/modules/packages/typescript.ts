@@ -2,18 +2,18 @@ import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export async function setupTypescript(projectPath: string) {
   const tsDir = path.join(projectPath, 'packages', 'typescript');
 
-  // 1. Create packages/typescript directory recursively
+  // 1. Create directory structure packages/typescript recursively
   await fsPromises.mkdir(tsDir, { recursive: true });
 
-  // 2. Initialize the package using pnpm init
+  // 2. Initialize package.json using pnpm init
   await runCommand('pnpm init', { cwd: tsDir, silent: true });
 
-  // 3. Customize the packages/typescript/package.json
+  // 3. Customize packages/typescript/package.json
   const tsPackagePath = path.join(tsDir, 'package.json');
   const tsPackageRaw = await fsPromises.readFile(tsPackagePath, 'utf8');
   const tsPkg = JSON.parse(tsPackageRaw);
@@ -21,17 +21,14 @@ export async function setupTypescript(projectPath: string) {
   tsPkg.name = '@config/typescript';
   tsPkg.version = '1.0.0';
   tsPkg.private = true;
-  tsPkg.type = 'module';
-  tsPkg.exports = {
-    './tsconfig.json': './tsconfig.json',
-  };
+  tsPkg.files = ['tsconfig.json'];
 
   // Remove defaults that are not needed
+  delete tsPkg.main;
+  delete tsPkg.scripts;
   delete tsPkg.keywords;
   delete tsPkg.author;
   delete tsPkg.license;
-  delete tsPkg.main;
-  delete tsPkg.scripts;
 
   await fsPromises.writeFile(
     tsPackagePath,
@@ -39,14 +36,27 @@ export async function setupTypescript(projectPath: string) {
     'utf8',
   );
 
-  // 4. Install typescript package dynamically as devDependency at workspace root
-  await runCommand('pnpm add -D typescript@latest -w', {
-    cwd: projectPath,
-    silent: true,
-  });
+  // 4. Create standard tsconfig.json base config
+  const tsconfigContent = {
+    $schema: 'https://json.schemastore.org/tsconfig',
+    compilerOptions: {
+      target: 'ES2022',
+      module: 'NodeNext',
+      moduleResolution: 'NodeNext',
+      lib: ['ES2022'],
+      strict: true,
+      esModuleInterop: true,
+      skipLibCheck: true,
+      forceConsistentCasingInFileNames: true,
+      isolatedModules: true,
+    },
+  };
 
-  // 5. Initialize tsconfig.json using npx tsc --init
-  await runCommand('npx tsc --init', { cwd: tsDir });
+  await fsPromises.writeFile(
+    path.join(tsDir, 'tsconfig.json'),
+    JSON.stringify(tsconfigContent, null, 2),
+    'utf8',
+  );
 }
 
 export async function runTypescriptSetup(projectPath: string) {
@@ -60,7 +70,6 @@ export async function runTypescriptSetup(projectPath: string) {
   }
 
   const s = spinner();
-  console.log('\n');
   s.start('Setting up modular TypeScript config in packages/typescript...');
   try {
     await setupTypescript(projectPath);
@@ -74,5 +83,4 @@ export async function runTypescriptSetup(projectPath: string) {
     console.error(pc.red(`\nError details: ${error.message || error}`));
     process.exit(1);
   }
-  console.log('\n');
 }

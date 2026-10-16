@@ -2,7 +2,7 @@ import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export async function setupLefthook(
   projectPath: string,
@@ -81,7 +81,6 @@ export async function runLefthookSetup(
   if (!gitInitialized) return;
 
   const s = spinner();
-  console.log('\n');
   s.start('Configuring modern Lefthook Git hooks...');
   try {
     await setupLefthook(projectPath, hasFormatter, hasLinter);
@@ -91,5 +90,4 @@ export async function runLefthookSetup(
     console.error(pc.red(`\nError details: ${error.message || error}`));
     process.exit(1);
   }
-  console.log('\n');
 }

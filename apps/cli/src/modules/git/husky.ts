@@ -1,9 +1,8 @@
 import { confirm, spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export async function promptHusky() {
   return await confirm({
@@ -49,22 +48,14 @@ export async function runHuskySetup(
 ) {
   if (!gitInitialized) return;
 
-  const huskyPrompt = await promptHusky();
-
-  handleCancel(huskyPrompt);
-
-  if (huskyPrompt) {
-    const s = spinner();
-    console.log('\n');
-    s.start('Setting up Husky hooks...');
-    try {
-      await setupHusky(projectPath);
-      s.stop(pc.green('✔ Success: Husky pre-commit hooks configured'));
-    } catch (error: any) {
-      s.stop(pc.red('✖ Failed: Husky setup failed'));
-      console.error(pc.red(`\nError details: ${error.message || error}`));
-      process.exit(1);
-    }
-    console.log('\n');
+  const s = spinner();
+  s.start('Setting up Husky hooks...');
+  try {
+    await setupHusky(projectPath);
+    s.stop(pc.green('✔ Success: Husky pre-commit hooks configured'));
+  } catch (error: any) {
+    s.stop(pc.red('✖ Failed: Husky setup failed'));
+    console.error(pc.red(`\nError details: ${error.message || error}`));
+    process.exit(1);
   }
 }

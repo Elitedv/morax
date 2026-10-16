@@ -1,14 +1,9 @@
 import { select } from '@clack/prompts';
-import handleCancel from '../utils/isCancel.js';
+import handleCancel from '../../../utils/isCancel.js';
 import { promptDrizzle, runDrizzleSetup } from './drizzle.js';
-import { promptPrisma, runPrismaSetup } from './prisma.js';
+import type { DbSelection, OrmType } from '../../../types/index.js';
 
-export type OrmType = 'drizzle' | 'prisma' | 'none';
-
-export interface DbSelection {
-  orm: OrmType;
-  dialect?: string;
-}
+export type { OrmType, DbSelection };
 
 export async function promptDatabase(): Promise<DbSelection> {
   const ormChoice = await select({
@@ -17,12 +12,7 @@ export async function promptDatabase(): Promise<DbSelection> {
       {
         value: 'drizzle',
         label: 'Drizzle ORM',
-        hint: 'Lightweight, SQL-like TypeScript ORM',
-      },
-      {
-        value: 'prisma',
-        label: 'Prisma ORM (v8)',
-        hint: 'Full-featured type-safe ORM & database toolkit',
+        hint: 'Lightweight, SQL-like TypeScript ORM (PostgreSQL)',
       },
       {
         value: 'none',
@@ -40,11 +30,6 @@ export async function promptDatabase(): Promise<DbSelection> {
     return { orm: 'drizzle', dialect };
   }
 
-  if (ormChoice === 'prisma') {
-    const dialect = await promptPrisma();
-    return { orm: 'prisma', dialect };
-  }
-
   return { orm: 'none' };
 }
 
@@ -55,11 +40,5 @@ export async function runDatabaseSetup(
 ) {
   if (selection.orm === 'drizzle' && selection.dialect) {
     await runDrizzleSetup(projectPath, selection.dialect, linter);
-  } else if (selection.orm === 'prisma' && selection.dialect) {
-    await runPrismaSetup(
-      projectPath,
-      selection.dialect as 'postgresql' | 'mongodb',
-      linter,
-    );
   }
 }

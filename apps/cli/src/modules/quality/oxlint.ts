@@ -2,30 +2,31 @@ import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export async function setupOxlint(projectPath: string) {
   // 1. Install oxlint dynamically at the workspace root
-  await runCommand('pnpm add -D oxlint@latest -w', {
+  await runCommand('pnpm add -D -E oxlint -w', {
     cwd: projectPath,
     silent: true,
   });
 
-  // 2. Create modern .oxlintrc.json configuration file at the root
-  const oxlintrcContent = {
+  // 2. Generate a standard, modern .oxlintrc.json configuration file
+  const oxlintConfig = {
     $schema: './node_modules/oxlint/configuration_schema.json',
-    plugins: ['typescript', 'import', 'unicorn'],
+    plugins: ['typescript', 'react', 'unicorn'],
     categories: {
       correctness: 'warn',
     },
     rules: {
-      'typescript/no-unused-vars': 'error',
+      'no-unused-vars': 'error',
+      'no-debugger': 'error',
     },
   };
 
   await fsPromises.writeFile(
     path.join(projectPath, '.oxlintrc.json'),
-    JSON.stringify(oxlintrcContent, null, 2),
+    JSON.stringify(oxlintConfig, null, 2),
     'utf8',
   );
 
@@ -48,7 +49,6 @@ export async function setupOxlint(projectPath: string) {
 
 export async function runOxlintSetup(projectPath: string) {
   const s = spinner();
-  console.log('\n');
   s.start('Configuring ultra-fast Oxlint linter...');
   try {
     await setupOxlint(projectPath);
@@ -60,5 +60,4 @@ export async function runOxlintSetup(projectPath: string) {
     console.error(pc.red(`\nError details: ${error.message || error}`));
     process.exit(1);
   }
-  console.log('\n');
 }

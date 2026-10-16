@@ -2,7 +2,7 @@ import { spinner } from '@clack/prompts';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import pc from 'picocolors';
-import { generateWorkspaceConfig } from './workspace.js';
+import { generateWorkspaceConfig } from './config.js';
 
 export async function createDirectories(
   directories: ('apps' | 'packages')[],
@@ -23,7 +23,6 @@ export async function makeDirectories(name: string, projectPath: string) {
   const directories: ('apps' | 'packages')[] = ['apps', 'packages'];
 
   const s = spinner();
-  console.log('\n');
   s.start('Generating workspace configs...');
   try {
     await generateWorkspaceConfig(name, directories, projectPath);
@@ -34,7 +33,6 @@ export async function makeDirectories(name: string, projectPath: string) {
     console.error(pc.red(`\nError details: ${error.message || error}`));
     process.exit(1);
   }
-  console.log('\n');
 
   return directories;
 }

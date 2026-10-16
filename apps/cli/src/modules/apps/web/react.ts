@@ -3,8 +3,8 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
 import { confirm, spinner, text } from '@clack/prompts';
-import handleCancel from '../utils/isCancel.js';
-import { runCommand } from '../utils/exec.js';
+import handleCancel from '../../../utils/isCancel.js';
+import { runCommand } from '../../../utils/exec.js';
 
 function runInteractiveCommand(
   command: string,

@@ -4,35 +4,23 @@ import path from 'path';
 export async function setupReadme(
   projectPath: string,
   workspaceName: string,
-  options: { hasDb?: boolean; orm?: 'drizzle' | 'prisma' | 'none' } = {},
+  options: { hasDb?: boolean; orm?: 'drizzle' | 'none' } = {},
 ) {
   const readmePath = path.join(projectPath, 'README.md');
 
   let dbDocs: string[] = [];
-  if (options.hasDb) {
-    if (options.orm === 'prisma') {
-      dbDocs = [
-        '### Database (Prisma ORM)',
-        'Manage schema migrations and visual database inspector:',
-        '```bash',
-        'pnpm --filter @repo/db db:generate  # Generate Prisma client',
-        'pnpm --filter @repo/db db:push      # Push schema directly to database',
-        'pnpm --filter @repo/db db:studio    # Open Prisma Studio visual GUI',
-        '```',
-        '',
-      ];
-    } else {
-      dbDocs = [
-        '### Database (Drizzle ORM)',
-        'Manage schema migrations and visual database inspector:',
-        '```bash',
-        'pnpm --filter @repo/db db:push      # Push schema directly to database',
-        'pnpm --filter @repo/db db:studio    # Open Drizzle Studio visual GUI',
-        'pnpm --filter @repo/db db:generate  # Generate migration SQL files',
-        '```',
-        '',
-      ];
-    }
+  if (options.hasDb && options.orm === 'drizzle') {
+    dbDocs = [
+      '### Database (Drizzle ORM)',
+      'Manage schema migrations, seeding, and visual database inspector:',
+      '```bash',
+      'pnpm --filter @repo/db db:push      # Push schema directly to database',
+      'pnpm --filter @repo/db db:seed      # Seed starter database records',
+      'pnpm --filter @repo/db db:studio    # Open Drizzle Studio visual GUI',
+      'pnpm --filter @repo/db db:generate  # Generate migration SQL files',
+      '```',
+      '',
+    ];
   }
 
   const readmeContent = [
@@ -46,7 +34,7 @@ export async function setupReadme(
     '- **`packages/`** — Shared modules, TypeScript configurations, and common utility libraries.',
     ...(options.hasDb
       ? [
-          `  - **\`packages/db\`** — Shared database schemas, migrations, and ${options.orm === 'prisma' ? 'Prisma' : 'Drizzle'} ORM client.`,
+          `  - **\`packages/db\`** — Shared database schemas, migrations, and Drizzle ORM client.`,
         ]
       : []),
     '',

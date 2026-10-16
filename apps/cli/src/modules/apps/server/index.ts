@@ -1,13 +1,14 @@
 import { confirm, spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import handleCancel from '../utils/isCancel.js';
+import handleCancel from '../../../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../../utils/exec.js';
+import type { ServerRuntime } from '../../../types/index.js';
 
 export async function promptServer() {
   return await confirm({
-    message: 'Do you want to setup a Express backend in apps/server?',
+    message: 'Do you want to setup an Express backend in apps/server?',
     initialValue: true,
   });
 }
@@ -15,7 +16,8 @@ export async function promptServer() {
 export async function setupServer(
   projectPath: string,
   linter: string = 'none',
-  orm: 'drizzle' | 'prisma' | 'none' = 'none',
+  orm: 'drizzle' | 'none' = 'none',
+  runtime: ServerRuntime = 'node',
 ) {
   const serverDir = path.join(projectPath, 'apps', 'server');
   const srcDir = path.join(serverDir, 'src');
@@ -38,9 +40,11 @@ export async function setupServer(
   serverPkg.type = 'module';
   serverPkg.main = 'dist/index.js';
   serverPkg.scripts = {
-    dev: 'tsx watch src/index.ts',
-    build: 'tsc',
-    start: 'node dist/index.js',
+    dev:
+      runtime === 'bun' ? 'bun --watch src/index.ts' : 'tsx watch src/index.ts',
+    build: 'tsdown',
+    start: runtime === 'bun' ? 'bun dist/index.js' : 'node dist/index.js',
+    check: 'tsc --noEmit',
   };
 
   if (linter === 'biome') {
@@ -87,18 +91,47 @@ export async function setupServer(
     'utf8',
   );
 
-  // 5. Install dependencies dynamically using pnpm add (fetches latest)
-  await runCommand('pnpm add express cors', { cwd: serverDir, silent: false });
+  // 5. Create tsdown.config.ts for fast, modern Rolldown-powered builds
+  const tsdownConfigContent = [
+    "import { defineConfig } from 'tsdown';",
+    '',
+    'export default defineConfig({',
+    "  entry: ['./src/index.ts'],",
+    "  format: 'esm',",
+    "  platform: 'node',",
+    '  clean: true,',
+    '});',
+    '',
+  ].join('\n');
 
-  await runCommand(
-    'pnpm add -D @types/express @types/cors tsx typescript@latest',
-    {
-      cwd: serverDir,
-      silent: false,
-    },
+  await fsPromises.writeFile(
+    path.join(serverDir, 'tsdown.config.ts'),
+    tsdownConfigContent,
+    'utf8',
   );
 
-  // 6. Create src/index.ts with premium starter code using CORS and Express
+  // 6. Install dependencies dynamically using pnpm add (fetches latest)
+  await runCommand('pnpm add express cors', { cwd: serverDir, silent: false });
+
+  const devDependencies = [
+    '@types/express',
+    '@types/cors',
+    'tsdown',
+    'typescript@latest',
+  ];
+
+  if (runtime === 'bun') {
+    devDependencies.push('@types/bun');
+  } else {
+    devDependencies.push('@types/node', 'tsx');
+  }
+
+  await runCommand(`pnpm add -D ${devDependencies.join(' ')}`, {
+    cwd: serverDir,
+    silent: false,
+  });
+
+  // 7. Create src/index.ts with starter code using CORS and Express
   let dbImport: string[] = [];
   let dbRoute: string[] = [];
 
@@ -109,20 +142,6 @@ export async function setupServer(
       "app.get('/api/users', async (req, res) => {",
       '  try {',
       '    const allUsers = await db.select().from(users);',
-      '    res.json({ users: allUsers });',
-      '  } catch (error: any) {',
-      '    res.status(500).json({ error: error.message });',
-      '  }',
-      '});',
-      '',
-    ];
-  } else if (orm === 'prisma') {
-    dbImport = ["import { db } from '@repo/db';"];
-    dbRoute = [
-      '// Example endpoint querying shared database package (Prisma ORM)',
-      "app.get('/api/users', async (req, res) => {",
-      '  try {',
-      '    const allUsers = await db.user.findMany();',
       '    res.json({ users: allUsers });',
       '  } catch (error: any) {',
       '    res.status(500).json({ error: error.message });',
@@ -170,7 +189,8 @@ export async function setupServer(
 export async function runServerSetup(
   projectPath: string,
   linter: string = 'none',
-  orm: 'drizzle' | 'prisma' | 'none' = 'none',
+  orm: 'drizzle' | 'none' = 'none',
+  runtime: ServerRuntime = 'node',
 ) {
   // Ensure the apps folder option was generated/exists
   const appsDir = path.join(projectPath, 'apps');
@@ -181,26 +201,21 @@ export async function runServerSetup(
     return;
   }
 
-  const serverPrompt = await promptServer();
-
-  handleCancel(serverPrompt);
-
-  if (serverPrompt) {
-    const s = spinner();
-    console.log('\n');
-    s.start('Setting up modular Express backend in apps/server...');
-    try {
-      await setupServer(projectPath, linter, orm);
-      s.stop(
-        pc.green(
-          '✔ Success: Modular Express backend configured in apps/server',
-        ),
-      );
-    } catch (error: any) {
-      s.stop(pc.red('✖ Failed: Express backend setup failed'));
-      console.error(pc.red(`\nError details: ${error.message || error}`));
-      process.exit(1);
-    }
-    console.log('\n');
+  const runtimeLabel = runtime === 'bun' ? 'Bun' : 'Node.js';
+  const s = spinner();
+  s.start(
+    `Setting up modular Express backend (${runtimeLabel}) in apps/server...`,
+  );
+  try {
+    await setupServer(projectPath, linter, orm, runtime);
+    s.stop(
+      pc.green(
+        `✔ Success: Modular Express backend (${runtimeLabel}) configured in apps/server`,
+      ),
+    );
+  } catch (error: any) {
+    s.stop(pc.red('✖ Failed: Express backend setup failed'));
+    console.error(pc.red(`\nError details: ${error.message || error}`));
+    process.exit(1);
   }
 }

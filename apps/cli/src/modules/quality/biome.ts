@@ -2,7 +2,7 @@ import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { runCommand } from '../utils/exec.js';
+import { runCommand } from '../../utils/exec.js';
 
 export interface BiomeOptions {
   linter: boolean;
@@ -84,7 +84,6 @@ export async function runBiomeSetup(
   options: BiomeOptions,
 ) {
   const s = spinner();
-  console.log('\n');
 
   const actionText =
     options.linter && options.formatter
@@ -102,5 +101,4 @@ export async function runBiomeSetup(
     console.error(pc.red(`\nError details: ${error.message || error}`));
     process.exit(1);
   }
-  console.log('\n');
 }

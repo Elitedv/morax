@@ -1,10 +1,10 @@
 import { select } from '@clack/prompts';
-import handleCancel from '../utils/isCancel.js';
-import { runShadcnSetup } from '../tasks/shadcn.js';
-import { setupNextjs } from '../tasks/nextjs.js';
-import { setupReact } from '../tasks/react.js';
+import handleCancel from '../../../utils/isCancel.js';
+import { runShadcnSetup } from './shadcn.js';
+import { setupNextjs } from './nextjs.js';
+import { setupReact } from './react.js';
 
-export default async function addweb(projectPath: string) {
+export async function addWeb(projectPath: string) {
   const framework = await select({
     message:
       'Which frontend website setup would you like to include in apps/web?',
@@ -38,3 +38,7 @@ export default async function addweb(projectPath: string) {
     await setupReact(projectPath);
   }
 }
+
+export { setupNextjs } from './nextjs.js';
+export { setupReact } from './react.js';
+export { runShadcnSetup, setupShadcn, promptShadcn } from './shadcn.js';

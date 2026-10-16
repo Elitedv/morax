@@ -4,3 +4,5 @@ export interface WorkspaceConfig {
   gitInit: boolean;
   setupHusky: boolean;
 }
+
+export * from './options.js';
