@@ -11,10 +11,12 @@ export interface ProjectDocsOptions {
   dbDialect?: 'postgresql' | 'sqlite';
   postgresProvider?: 'docker' | 'neon';
   hasDocker?: boolean;
+  hasDockerScripts?: boolean;
   dockerServices?: { postgres?: boolean; redis?: boolean };
   hasRedis?: boolean;
   webFramework?: 'nextjs' | 'react' | 'skip';
   hasEnv?: boolean;
+  hasAuth?: boolean;
 }
 
 export async function setupProjectDocs(
@@ -33,9 +35,11 @@ export async function setupProjectDocs(
     dbDialect,
     postgresProvider,
     hasDocker,
+    hasDockerScripts,
     dockerServices,
     webFramework,
     hasEnv,
+    hasAuth,
   } = options;
 
   // 1. docs/ARCHITECTURE.md
@@ -69,10 +73,20 @@ export async function setupProjectDocs(
           `  - **\`@repo/env\`**: Type-safe environment validation schemas powered by Zod.`,
         ]
       : []),
+    ...(hasAuth
+      ? [
+          `  - **\`@repo/auth\`**: Centralized Better Auth server instance and type-safe client.`,
+        ]
+      : []),
     '  - **`@config/typescript`**: Shared `tsconfig.json` base presets ensuring uniform compilation.',
     ...(hasDocker
       ? [
           '- **`docker/`**: Container configurations for local databases and caching infrastructure.',
+        ]
+      : []),
+    ...(hasDockerScripts
+      ? [
+          '- **`scripts/`**: Container helper scripts (`docker.sh`, `docker.js`).',
         ]
       : []),
     '',
@@ -210,16 +224,45 @@ export async function setupProjectDocs(
         : []),
       '',
       '## Commands',
-      '```bash',
-      'pnpm docker:up       # Start all services in the background',
-      'pnpm docker:down     # Stop all container services',
-      ...(dockerServices?.postgres
-        ? ['pnpm docker:db       # Start PostgreSQL container only']
-        : []),
-      ...(dockerServices?.redis
-        ? ['pnpm docker:redis    # Start Redis container only']
-        : []),
-      '```',
+      ...(hasDockerScripts
+        ? [
+            '```bash',
+            '# Local infrastructure commands',
+            './scripts/command.sh infra-up       # Start all services in the background',
+            './scripts/command.sh infra-down     # Stop all container services',
+            ...(dockerServices?.postgres
+              ? [
+                  './scripts/command.sh postgres-up   # Start PostgreSQL container only',
+                  './scripts/command.sh postgres-down # Stop PostgreSQL container only',
+                ]
+              : []),
+            ...(dockerServices?.redis
+              ? [
+                  './scripts/command.sh redis-up      # Start Redis container only',
+                  './scripts/command.sh redis-down    # Stop Redis container only',
+                ]
+              : []),
+            '```',
+          ]
+        : [
+            '```bash',
+            '# Direct Docker Compose commands',
+            'docker compose --env-file .env -f docker/docker-compose.yml up -d      # Start all services',
+            'docker compose --env-file .env -f docker/docker-compose.yml down       # Stop all services',
+            'docker compose --env-file .env -f docker/docker-compose.yml ps         # Check status',
+            'docker compose --env-file .env -f docker/docker-compose.yml logs -f    # View logs',
+            ...(dockerServices?.postgres
+              ? [
+                  'docker compose --env-file .env -f docker/docker-compose.yml --profile postgres up -d  # Postgres only',
+                ]
+              : []),
+            ...(dockerServices?.redis
+              ? [
+                  'docker compose --env-file .env -f docker/docker-compose.yml --profile redis up -d     # Redis only',
+                ]
+              : []),
+            '```',
+          ]),
       '',
       'Docker Compose automatically loads root variables using `--env-file .env`.',
       '',
@@ -250,5 +293,68 @@ export async function setupProjectDocs(
       '',
     ].join('\n');
     await fsPromises.writeFile(path.join(docsDir, 'WEB.md'), webMd, 'utf8');
+  }
+
+  // 7. docs/AUTH.md (if Better Auth is configured)
+  if (hasAuth) {
+    const authMd = [
+      `# Authentication Architecture (@repo/auth)`,
+      '',
+      'Type-safe authentication and session management powered by **Better Auth** with **Drizzle ORM**.',
+      '',
+      '## Structure',
+      '```text',
+      'packages/auth/',
+      '├── src/',
+      '│   ├── index.ts        # Server auth instance: betterAuth({...})',
+      '│   ├── client.ts       # Type-safe client: createAuthClient({...})',
+      '│   └── origins.ts      # Allowed trusted CORS origins',
+      '└── package.json',
+      '```',
+      '',
+      '## Server Mounting',
+      serverFramework === 'hono'
+        ? [
+            'Better Auth is mounted on the Hono backend at `/api/auth/**`:',
+            '```typescript',
+            "import { auth } from '@repo/auth';",
+            '',
+            "app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw));",
+            '```',
+          ].join('\n')
+        : [
+            'Better Auth is mounted on the Express backend at `/api/auth/*`:',
+            '```typescript',
+            "import { auth } from '@repo/auth';",
+            "import { toNodeHandler } from 'better-auth/node';",
+            '',
+            "app.all('/api/auth/*', toNodeHandler(auth));",
+            '```',
+          ].join('\n'),
+      '',
+      '## Client Usage (Frontend)',
+      'Import the pre-configured auth client anywhere in `apps/web`:',
+      '```typescript',
+      "import { authClient, signIn, signOut, useSession } from '@repo/auth/client';",
+      '',
+      '// Sign in with email and password',
+      'await signIn.email({',
+      "  email: 'user@example.com',",
+      "  password: 'secure-password',",
+      '});',
+      '',
+      '// React session hook',
+      'const { data: session, isPending } = useSession();',
+      '```',
+      '',
+      '## Database Schemas',
+      'Better Auth tables are declared in `packages/db/src/schema/auth.ts` and exported via `@repo/db`:',
+      '- `user`: User profiles and verification flags',
+      '- `session`: Active authenticated user sessions',
+      '- `account`: OAuth and credential login links',
+      '- `verification`: Email verification and password reset tokens',
+      '',
+    ].join('\n');
+    await fsPromises.writeFile(path.join(docsDir, 'AUTH.md'), authMd, 'utf8');
   }
 }

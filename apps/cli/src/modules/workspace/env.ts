@@ -1,12 +1,12 @@
 import fsPromises from 'fs/promises';
 import path from 'path';
-import type { DbSelection } from '../../types/options.js';
+import type { DbSelection, WebFramework } from '../../types/options.js';
 
 export interface RootEnvOptions {
   db?: DbSelection;
   redis?: boolean;
   hasServer?: boolean;
-  webFramework?: 'nextjs' | 'react' | 'skip';
+  webFramework?: WebFramework;
 }
 
 export async function setupRootEnv(

@@ -95,31 +95,6 @@ export async function setupDocker(
       'utf8',
     );
 
-    // Add docker scripts to root package.json
-    const rootPkgPath = path.join(projectPath, 'package.json');
-    try {
-      const raw = await fsPromises.readFile(rootPkgPath, 'utf8');
-      const pkg = JSON.parse(raw);
-      pkg.scripts = pkg.scripts || {};
-      pkg.scripts['docker:up'] =
-        'docker compose --env-file .env -f docker/docker-compose.yml up -d';
-      pkg.scripts['docker:down'] =
-        'docker compose --env-file .env -f docker/docker-compose.yml down';
-      if (options.postgres) {
-        pkg.scripts['docker:db'] =
-          'docker compose --env-file .env -f docker/docker-compose.yml --profile postgres up -d';
-      }
-      if (options.redis) {
-        pkg.scripts['docker:redis'] =
-          'docker compose --env-file .env -f docker/docker-compose.yml --profile redis up -d';
-      }
-      await fsPromises.writeFile(
-        rootPkgPath,
-        JSON.stringify(pkg, null, 2),
-        'utf8',
-      );
-    } catch {}
-
     const configuredList = [
       options.postgres ? 'PostgreSQL' : null,
       options.redis ? 'Redis' : null,

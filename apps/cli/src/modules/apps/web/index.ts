@@ -3,6 +3,7 @@ import handleCancel from '../../../utils/isCancel.js';
 import { runShadcnSetup } from './shadcn.js';
 import { setupNextjs } from './nextjs.js';
 import { setupReact } from './react.js';
+import type { WebFramework } from '../../../types/options.js';
 
 export async function addWeb(projectPath: string) {
   const framework = await select({
@@ -38,7 +39,7 @@ export async function addWeb(projectPath: string) {
     await setupReact(projectPath);
   }
 
-  return framework as 'nextjs' | 'react' | 'skip';
+  return framework as WebFramework;
 }
 
 export { setupNextjs } from './nextjs.js';

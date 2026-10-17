@@ -11,12 +11,14 @@ export interface AgentDocsOptions {
   dbDialect?: 'postgresql' | 'sqlite';
   postgresProvider?: 'docker' | 'neon';
   hasDocker?: boolean;
+  hasDockerScripts?: boolean;
   dockerServices?: { postgres?: boolean; redis?: boolean };
   hasRedis?: boolean;
   webFramework?: 'nextjs' | 'react' | 'skip';
   linter?: string;
   formatter?: string;
   hasEnv?: boolean;
+  hasAuth?: boolean;
 }
 
 export function generateClaudeMd(options: AgentDocsOptions): string {
@@ -30,11 +32,13 @@ export function generateClaudeMd(options: AgentDocsOptions): string {
     dbDialect,
     postgresProvider,
     hasDocker,
+    hasDockerScripts,
     dockerServices,
     webFramework,
     linter,
     formatter,
     hasEnv,
+    hasAuth,
   } = options;
 
   const stack: string[] = ['- **Package Manager**: pnpm (workspaces)'];
@@ -51,6 +55,11 @@ export function generateClaudeMd(options: AgentDocsOptions): string {
   if (hasDb && orm === 'drizzle') {
     stack.push(
       `- **Database & ORM**: Drizzle ORM (${dbDialect ?? 'postgresql'}${postgresProvider ? ` - ${postgresProvider}` : ''}) in \`packages/db\``,
+    );
+  }
+  if (hasAuth) {
+    stack.push(
+      '- **Authentication**: Better Auth with Drizzle adapter in `@repo/auth`',
     );
   }
   if (hasEnv) {
@@ -94,12 +103,21 @@ export function generateClaudeMd(options: AgentDocsOptions): string {
   }
 
   if (hasDocker) {
-    commands.push(
-      '',
-      '# Docker Infrastructure',
-      'pnpm docker:up          # Start Docker compose services',
-      'pnpm docker:down        # Stop Docker compose services',
-    );
+    if (hasDockerScripts) {
+      commands.push(
+        '',
+        '# Docker Infrastructure (Runner script)',
+        './scripts/command.sh infra-up          # Start Docker infrastructure services',
+        './scripts/command.sh infra-down        # Stop Docker infrastructure services',
+      );
+    } else {
+      commands.push(
+        '',
+        '# Docker Infrastructure',
+        'docker compose --env-file .env -f docker/docker-compose.yml up -d   # Start Docker services',
+        'docker compose --env-file .env -f docker/docker-compose.yml down    # Stop Docker services',
+      );
+    }
   }
 
   if (hasDb) {
@@ -136,6 +154,11 @@ export function generateClaudeMd(options: AgentDocsOptions): string {
           '│   ├── db/                 # Drizzle ORM client, schemas & migrations',
         ]
       : []),
+    ...(hasAuth
+      ? [
+          '│   ├── auth/               # Shared Better Auth server & client (@repo/auth)',
+        ]
+      : []),
     ...(hasEnv
       ? [
           '│   ├── env/                # Type-safe environment schemas (@repo/env)',
@@ -144,6 +167,9 @@ export function generateClaudeMd(options: AgentDocsOptions): string {
     '│   └── typescript/         # Shared TypeScript configs (@config/typescript)',
     ...(hasDocker
       ? ['├── docker/                 # docker-compose.yml configuration']
+      : []),
+    ...(hasDockerScripts
+      ? ['├── scripts/                # Helper scripts (docker.sh, docker.js)']
       : []),
     '├── .env                    # Monorepo single source of truth for secrets',
     '└── package.json            # Root workspace orchestrator',

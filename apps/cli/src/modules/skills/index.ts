@@ -1,5 +1,7 @@
 import { multiselect, spinner } from '@clack/prompts';
 import pc from 'picocolors';
+import fsPromises from 'fs/promises';
+import path from 'path';
 import handleCancel from '../../utils/isCancel.js';
 import { runCommand } from '../../utils/exec.js';
 
@@ -72,6 +74,30 @@ export async function installSkills(
       );
     }
   }
+
+  // 1. Remove unwanted .claude folder created by skills.sh CLI
+  const claudeDir = path.join(projectPath, '.claude');
+  try {
+    await fsPromises.rm(claudeDir, { recursive: true, force: true });
+  } catch {}
+
+  // 2. Ensure .agents/ is present in root .gitignore
+  const gitignorePath = path.join(projectPath, '.gitignore');
+  try {
+    let gitignoreContent = '';
+    try {
+      gitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
+    } catch {
+      gitignoreContent = '';
+    }
+
+    if (!gitignoreContent.includes('.agents')) {
+      const entry = gitignoreContent
+        ? '\n# AI Agent Skills & Tooling\n.agents/\n.agent/\n'
+        : '# AI Agent Skills & Tooling\n.agents/\n.agent/\n';
+      await fsPromises.appendFile(gitignorePath, entry, 'utf8');
+    }
+  } catch {}
 }
 
 export async function promptAndInstallSkills(projectPath: string) {

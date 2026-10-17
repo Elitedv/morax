@@ -8,6 +8,7 @@ export type ServerDeploymentTarget = 'docker' | 'vercel' | 'none';
 export type DbDialect = 'postgresql' | 'sqlite';
 export type PostgresProvider = 'docker' | 'neon';
 export type NeonConnectionMode = 'serverless' | 'pool';
+export type WebFramework = 'nextjs' | 'react' | 'skip';
 
 export interface DbSelection {
   orm: OrmType;

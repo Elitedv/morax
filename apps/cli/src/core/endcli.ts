@@ -8,6 +8,7 @@ export function endCli(
     hasDb?: boolean;
     orm?: 'drizzle' | 'none';
     hasDocker?: boolean;
+    hasDockerScripts?: boolean;
     dockerServices?: { postgres?: boolean; redis?: boolean };
   } = {},
 ) {
@@ -21,15 +22,28 @@ export function endCli(
     ` 2. ${pc.cyan('pnpm dev')}`;
 
   if (options.hasDocker) {
-    instructions +=
-      `\n\n${pc.bold('Docker Infrastructure commands:')}\n` +
-      ` • Start all:       ${pc.cyan('pnpm docker:up')}\n` +
-      ` • Stop all:        ${pc.cyan('pnpm docker:down')}`;
-    if (options.dockerServices?.postgres) {
-      instructions += `\n • Start Postgres:  ${pc.cyan('pnpm docker:db')}`;
-    }
-    if (options.dockerServices?.redis) {
-      instructions += `\n • Start Redis:     ${pc.cyan('pnpm docker:redis')}`;
+    if (options.hasDockerScripts) {
+      instructions +=
+        `\n\n${pc.bold('Docker Infrastructure (Runner scripts):')}\n` +
+        ` • Start all:       ${pc.cyan('pnpm docker:up')}\n` +
+        ` • Stop all:        ${pc.cyan('pnpm docker:down')}`;
+      if (options.dockerServices?.postgres) {
+        instructions += `\n • Start Postgres:  ${pc.cyan('pnpm docker db')}`;
+      }
+      if (options.dockerServices?.redis) {
+        instructions += `\n • Start Redis:     ${pc.cyan('pnpm docker redis')}`;
+      }
+    } else {
+      instructions +=
+        `\n\n${pc.bold('Docker Infrastructure:')}\n` +
+        ` • Start all:       ${pc.cyan('docker compose --env-file .env -f docker/docker-compose.yml up -d')}\n` +
+        ` • Stop all:        ${pc.cyan('docker compose --env-file .env -f docker/docker-compose.yml down')}`;
+      if (options.dockerServices?.postgres) {
+        instructions += `\n • Start Postgres:  ${pc.cyan('docker compose --env-file .env -f docker/docker-compose.yml --profile postgres up -d')}`;
+      }
+      if (options.dockerServices?.redis) {
+        instructions += `\n • Start Redis:     ${pc.cyan('docker compose --env-file .env -f docker/docker-compose.yml --profile redis up -d')}`;
+      }
     }
   }
 

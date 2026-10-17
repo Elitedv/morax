@@ -4,6 +4,7 @@ import handleCancel from '../../utils/isCancel.js';
 import { setupProjectDocs, type ProjectDocsOptions } from './docs.js';
 import { setupAgentDocs, type AgentDocsOptions } from './agents.js';
 import { setupLicense, type LicenseType } from './license.js';
+import { setupDockerScripts } from './scripts.js';
 
 export interface WorkspaceExtrasOptions
   extends ProjectDocsOptions, AgentDocsOptions {
@@ -13,32 +14,43 @@ export interface WorkspaceExtrasOptions
 export async function promptAndSetupExtras(
   projectPath: string,
   options: WorkspaceExtrasOptions,
-) {
+): Promise<{ hasScripts: boolean; choices: string[] }> {
+  const extraOptions = [
+    {
+      value: 'docs',
+      label: 'Documentation (/docs)',
+      hint: 'Architecture & guides',
+    },
+    {
+      value: 'agents',
+      label: 'AI Agent Rules (CLAUDE.md & AGENTS.md)',
+      hint: 'Rules for AI coding assistants',
+    },
+    {
+      value: 'license',
+      label: 'License (LICENSE)',
+      hint: 'Open source license file',
+    },
+  ];
+
+  if (options.hasDocker) {
+    extraOptions.push({
+      value: 'scripts',
+      label: 'Docker Scripts (scripts/)',
+      hint: 'Helper scripts for Docker',
+    });
+  }
+
   const selectedExtras = await multiselect({
     message: 'Select additional documentation & project files:',
-    options: [
-      {
-        value: 'docs',
-        label: 'Documentation (/docs)',
-        hint: 'Architecture & guides',
-      },
-      {
-        value: 'agents',
-        label: 'AI Agent Rules (CLAUDE.md & AGENTS.md)',
-        hint: 'Rules for AI coding assistants',
-      },
-      {
-        value: 'license',
-        label: 'License (LICENSE)',
-        hint: 'Open source license file',
-      },
-    ],
+    options: extraOptions,
     initialValues: ['docs'],
     required: false,
   });
 
   handleCancel(selectedExtras);
   const choices = selectedExtras as string[];
+  const hasScripts = choices.includes('scripts');
 
   let selectedLicense: LicenseType | 'none' = 'none';
   if (choices.includes('license')) {
@@ -82,12 +94,22 @@ export async function promptAndSetupExtras(
   s.start('Generating documentation and repository files...');
 
   try {
+    if (hasScripts) {
+      await setupDockerScripts(projectPath, options.dockerServices);
+    }
+
     if (choices.includes('docs')) {
-      await setupProjectDocs(projectPath, options);
+      await setupProjectDocs(projectPath, {
+        ...options,
+        hasDockerScripts: hasScripts,
+      });
     }
 
     if (choices.includes('agents')) {
-      await setupAgentDocs(projectPath, options);
+      await setupAgentDocs(projectPath, {
+        ...options,
+        hasDockerScripts: hasScripts,
+      });
     }
 
     if (choices.includes('license') && selectedLicense !== 'none') {
@@ -103,9 +125,11 @@ export async function promptAndSetupExtras(
         '✔ Success: Additional project documentation and files generated',
       ),
     );
-  } catch (error: any) {
+  } catch {
     s.stop(
       pc.yellow('⚠ Warning: Failed to generate some extra documentation files'),
     );
   }
+
+  return { hasScripts, choices };
 }

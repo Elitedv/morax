@@ -46,6 +46,7 @@ import {
 } from '../modules/apps/server/index.js';
 import { addWeb } from '../modules/apps/web/index.js';
 import { runEnvSetup, promptEnv } from '../modules/packages/env/index.js';
+import { promptAuth, setupAuth } from '../modules/packages/auth/index.js';
 import { setupDocker } from '../modules/docker/index.js';
 import type { GitHookType, ServerRuntime } from '../types/index.js';
 
@@ -213,20 +214,30 @@ export async function runWorkspaceScaffolder(
     });
   }
 
-  await setupReadme(projectPath, name, {
-    hasDb: dbConfig.orm !== 'none',
-    orm: dbConfig.orm,
-    hasDocker: isPostgresDocker || setupRedis,
-    dockerServices: {
-      postgres: isPostgresDocker,
-      redis: setupRedis,
-    },
-  });
+  // =========================================================================
+  // STEP 6.5: Better Auth Package (@repo/auth) (Optional, requires Drizzle ORM)
+  // =========================================================================
+  let shouldSetupAuth = false;
+  if (dbConfig.orm === 'drizzle') {
+    shouldSetupAuth = await promptAuth();
+    if (shouldSetupAuth) {
+      await setupAuth({
+        projectPath,
+        dialect: dbConfig.dialect,
+        serverFramework,
+        serverRuntime,
+        webFramework,
+        hasServer: serverFramework !== 'none',
+        hasWeb: webFramework !== 'skip',
+        hasEnv: shouldSetupEnv,
+      });
+    }
+  }
 
   // =========================================================================
   // STEP 7: Documentation, AI Agent Guidelines & License (Optional)
   // =========================================================================
-  await promptAndSetupExtras(projectPath, {
+  const extras = await promptAndSetupExtras(projectPath, {
     projectName: name,
     hasServer: serverFramework !== 'none',
     serverFramework: serverFramework !== 'none' ? serverFramework : undefined,
@@ -245,6 +256,19 @@ export async function runWorkspaceScaffolder(
     linter,
     formatter,
     hasEnv: shouldSetupEnv,
+    hasAuth: shouldSetupAuth,
+  });
+
+  await setupReadme(projectPath, name, {
+    hasDb: dbConfig.orm !== 'none',
+    orm: dbConfig.orm,
+    hasDocker: isPostgresDocker || setupRedis,
+    hasDockerScripts: extras.hasScripts,
+    hasAuth: shouldSetupAuth,
+    dockerServices: {
+      postgres: isPostgresDocker,
+      redis: setupRedis,
+    },
   });
 
   // =========================================================================
@@ -272,6 +296,7 @@ export async function runWorkspaceScaffolder(
     hasDb: dbConfig.orm !== 'none',
     orm: dbConfig.orm,
     hasDocker: isPostgresDocker || setupRedis,
+    hasDockerScripts: extras.hasScripts,
     dockerServices: {
       postgres: isPostgresDocker,
       redis: setupRedis,

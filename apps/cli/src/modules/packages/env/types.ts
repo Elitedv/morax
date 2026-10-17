@@ -1,4 +1,4 @@
-import type { PostgresProvider } from '../../../types/index.js';
+import type { PostgresProvider, WebFramework } from '../../../types/index.js';
 
 export interface EnvSetupOptions {
   projectPath: string;
@@ -8,5 +8,5 @@ export interface EnvSetupOptions {
   hasDocker?: boolean;
   hasRedis: boolean;
   hasServer: boolean;
-  webFramework: 'nextjs' | 'react' | 'skip';
+  webFramework: WebFramework;
 }

@@ -8,6 +8,8 @@ export async function setupReadme(
     hasDb?: boolean;
     orm?: 'drizzle' | 'none';
     hasDocker?: boolean;
+    hasDockerScripts?: boolean;
+    hasAuth?: boolean;
     dockerServices?: { postgres?: boolean; redis?: boolean };
   } = {},
 ) {
@@ -15,21 +17,51 @@ export async function setupReadme(
 
   let dockerDocs: string[] = [];
   if (options.hasDocker) {
-    dockerDocs = [
-      '### Docker Infrastructure',
-      'Manage local services from the workspace root:',
-      '```bash',
-      'pnpm docker:up       # Start all local docker services in background',
-      'pnpm docker:down     # Stop all local docker services',
-      ...(options.dockerServices?.postgres
-        ? ['pnpm docker:db       # Start PostgreSQL service only']
-        : []),
-      ...(options.dockerServices?.redis
-        ? ['pnpm docker:redis    # Start Redis service only']
-        : []),
-      '```',
-      '',
-    ];
+    if (options.hasDockerScripts) {
+      dockerDocs = [
+        '### Docker Infrastructure',
+        'Manage local services using the workspace helper script:',
+        '```bash',
+        './scripts/command.sh infra-up       # Start all local docker services in background',
+        './scripts/command.sh infra-down     # Stop all local docker services',
+        ...(options.dockerServices?.postgres
+          ? [
+              './scripts/command.sh postgres-up   # Start PostgreSQL service only',
+              './scripts/command.sh postgres-down # Stop PostgreSQL service only',
+            ]
+          : []),
+        ...(options.dockerServices?.redis
+          ? [
+              './scripts/command.sh redis-up      # Start Redis service only',
+              './scripts/command.sh redis-down    # Stop Redis service only',
+            ]
+          : []),
+        '```',
+        '',
+      ];
+    } else {
+      dockerDocs = [
+        '### Docker Infrastructure',
+        'Manage local services via Docker Compose directly:',
+        '```bash',
+        'docker compose --env-file .env -f docker/docker-compose.yml up -d    # Start all services',
+        'docker compose --env-file .env -f docker/docker-compose.yml down     # Stop all services',
+        'docker compose --env-file .env -f docker/docker-compose.yml ps       # Check status',
+        'docker compose --env-file .env -f docker/docker-compose.yml logs -f  # View container logs',
+        ...(options.dockerServices?.postgres
+          ? [
+              'docker compose --env-file .env -f docker/docker-compose.yml --profile postgres up -d  # Postgres only',
+            ]
+          : []),
+        ...(options.dockerServices?.redis
+          ? [
+              'docker compose --env-file .env -f docker/docker-compose.yml --profile redis up -d     # Redis only',
+            ]
+          : []),
+        '```',
+        '',
+      ];
+    }
   }
 
   let dbDocs: string[] = [];
@@ -42,6 +74,19 @@ export async function setupReadme(
       'pnpm --filter @repo/db db:seed      # Seed starter database records',
       'pnpm --filter @repo/db db:studio    # Open Drizzle Studio visual GUI',
       'pnpm --filter @repo/db db:generate  # Generate migration SQL files',
+      '```',
+      '',
+    ];
+  }
+
+  let authDocs: string[] = [];
+  if (options.hasAuth) {
+    authDocs = [
+      '### Authentication (@repo/auth)',
+      'Better Auth server endpoints are mounted at `/api/auth/*` on your API server.',
+      'Import client hooks in frontend applications:',
+      '```typescript',
+      "import { authClient, useSession, signIn, signOut } from '@repo/auth/client';",
       '```',
       '',
     ];
@@ -61,9 +106,19 @@ export async function setupReadme(
           '  - **`docker/`** — Local container infrastructure configurations (docker-compose.yml).',
         ]
       : []),
+    ...(options.hasDockerScripts
+      ? [
+          '  - **`scripts/`** — Cross-platform container helper scripts (docker.sh, docker.js).',
+        ]
+      : []),
     ...(options.hasDb
       ? [
           `  - **\`packages/db\`** — Shared database schemas, migrations, and Drizzle ORM client.`,
+        ]
+      : []),
+    ...(options.hasAuth
+      ? [
+          `  - **\`packages/auth\`** — Shared Better Auth server instance and type-safe client.`,
         ]
       : []),
     '',
@@ -79,6 +134,7 @@ export async function setupReadme(
     '',
     ...dockerDocs,
     ...dbDocs,
+    ...authDocs,
     '### Linting',
     'Run static analysis across all workspaces:',
     '```bash',
