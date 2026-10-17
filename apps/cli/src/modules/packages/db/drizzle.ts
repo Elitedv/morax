@@ -21,12 +21,12 @@ export async function promptDrizzle(): Promise<{
       {
         value: 'postgresql',
         label: 'PostgreSQL',
-        hint: 'Docker / Neon / Supabase / node-postgres',
+        hint: 'Docker / Neon',
       },
       {
         value: 'sqlite',
         label: 'SQLite',
-        hint: 'libsql / Turso / local SQLite database file',
+        hint: 'LibSQL / Turso',
       },
     ],
     initialValue: 'postgresql',
@@ -42,12 +42,12 @@ export async function promptDrizzle(): Promise<{
         {
           value: 'docker',
           label: 'Docker (Local)',
-          hint: 'Pre-configured docker-compose.yml + node-postgres Pool',
+          hint: 'docker-compose.yml',
         },
         {
           value: 'neon',
           label: 'Neon (Serverless)',
-          hint: 'Cloud serverless Postgres (@neondatabase/serverless)',
+          hint: 'Serverless cloud',
         },
       ],
       initialValue: 'docker',
@@ -64,12 +64,12 @@ export async function promptDrizzle(): Promise<{
           {
             value: 'serverless',
             label: 'Serverless HTTP',
-            hint: 'drizzle-orm/neon-http (ideal for serverless & edge)',
+            hint: 'neon-http (edge)',
           },
           {
             value: 'pool',
             label: 'Connection Pool',
-            hint: 'drizzle-orm/neon-serverless (WebSocket Pool with transactions)',
+            hint: 'WebSocket pool',
           },
         ],
         initialValue: 'serverless',

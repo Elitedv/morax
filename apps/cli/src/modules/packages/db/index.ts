@@ -12,12 +12,12 @@ export async function promptDatabase(): Promise<DbSelection> {
       {
         value: 'drizzle',
         label: 'Drizzle ORM',
-        hint: 'Lightweight, SQL-like TypeScript ORM (PostgreSQL, SQLite)',
+        hint: 'PostgreSQL & SQLite',
       },
       {
         value: 'none',
         label: 'None',
-        hint: 'Skip database package setup',
+        hint: 'Skip',
       },
     ],
     initialValue: 'drizzle',

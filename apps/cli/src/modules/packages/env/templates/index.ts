@@ -30,9 +30,9 @@ export function renderIndexEnvTemplate(options: EnvSetupOptions): string {
   }
 
   if (webFramework !== 'skip') {
-    imports.push("import { web } from './schema/web.js';");
-    envProperties.push('  web,');
-    namedExports.push('web');
+    imports.push("import { webSchema } from './schema/web.js';");
+    envProperties.push('  webSchema,');
+    namedExports.push('webSchema');
     typeExports.push("export type { WebEnv } from './schema/web.js';");
   }
 

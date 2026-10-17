@@ -16,7 +16,7 @@ export async function askApps(): Promise<('web' | 'server')[]> {
       {
         value: 'web',
         label: 'Frontend Apps',
-        hint: 'Next.js, React + Vite',
+        hint: 'Next.js, Vite',
       },
       {
         value: 'server',
@@ -38,12 +38,12 @@ export async function askServerRuntime(): Promise<ServerRuntime> {
       {
         value: 'node',
         label: 'Node.js',
-        hint: 'Standard Node.js runtime (tsx, tsc, tsdown)',
+        hint: 'Standard Node runtime',
       },
       {
         value: 'bun',
         label: 'Bun',
-        hint: 'Fast all-in-one JavaScript & TypeScript runtime (bun, tsdown)',
+        hint: 'Fast all-in-one runtime',
       },
     ],
     initialValue: 'node',
@@ -60,17 +60,17 @@ export async function askLinter(): Promise<LinterType> {
       {
         value: 'oxlint',
         label: 'Oxlint',
-        hint: 'Blazingly fast Rust linter with bleeding-edge TS support',
+        hint: 'Fast Rust linter',
       },
       {
         value: 'biome',
         label: 'Biome',
-        hint: 'Fast Rust linter with rich built-in lint rules',
+        hint: 'Rust toolchain',
       },
       {
         value: 'none',
         label: 'None',
-        hint: 'Skip linter configuration',
+        hint: 'Skip',
       },
     ],
     initialValue: 'oxlint',
@@ -87,17 +87,17 @@ export async function askFormatter(): Promise<FormatterType> {
       {
         value: 'prettier',
         label: 'Prettier',
-        hint: 'Industry-standard code formatting (.prettierrc)',
+        hint: 'Standard formatter',
       },
       {
         value: 'biome',
         label: 'Biome',
-        hint: 'Ultra-fast Rust code formatter',
+        hint: 'Fast formatter',
       },
       {
         value: 'none',
         label: 'None',
-        hint: 'Skip code formatter',
+        hint: 'Skip',
       },
     ],
     initialValue: 'prettier',
@@ -114,17 +114,17 @@ export async function askGitHooks(): Promise<GitHookType> {
       {
         value: 'lefthook',
         label: 'Lefthook',
-        hint: 'Fast, powerful cross-platform Git hooks (Go-based)',
+        hint: 'Fast Go-based',
       },
       {
         value: 'husky',
         label: 'Husky',
-        hint: 'Classic Node-based Git pre-commit hooks',
+        hint: 'Classic pre-commit',
       },
       {
         value: 'none',
         label: 'None',
-        hint: 'Skip Git hooks setup',
+        hint: 'Skip',
       },
     ],
     initialValue: 'lefthook',
@@ -141,12 +141,12 @@ export async function askTypescript(): Promise<boolean> {
       {
         value: 'yes',
         label: 'Yes',
-        hint: 'Modular @config/typescript package',
+        hint: '@config/typescript',
       },
       {
         value: 'no',
         label: 'No',
-        hint: 'Skip shared TypeScript config',
+        hint: 'Skip',
       },
     ],
     initialValue: 'yes',
@@ -163,12 +163,12 @@ export async function askRedis(): Promise<boolean> {
       {
         value: 'yes',
         label: 'Yes',
-        hint: 'Pre-configured Redis container in docker/docker-compose.yml',
+        hint: 'Docker container',
       },
       {
         value: 'no',
         label: 'No',
-        hint: 'Skip Redis setup',
+        hint: 'Skip',
       },
     ],
     initialValue: 'no',
@@ -178,39 +178,20 @@ export async function askRedis(): Promise<boolean> {
   return choice === 'yes';
 }
 
-export async function gatherWorkspaceAnswers(
-  name: string,
-  projectPath: string,
-  gitInitialized: boolean,
-): Promise<WorkspaceAnswers> {
+export async function promptWorkspaceOptions(): Promise<WorkspaceAnswers> {
   const selectedApps = await askApps();
-
-  let serverRuntime: ServerRuntime | undefined;
-  if (selectedApps.includes('server')) {
-    serverRuntime = await askServerRuntime();
-  }
-
   const db = await promptDatabase();
   const setupRedis = await askRedis();
   const linter = await askLinter();
   const formatter = await askFormatter();
-
-  let gitHook: GitHookType = 'none';
-  if (gitInitialized) {
-    gitHook = await askGitHooks();
-  }
-
-  let includeTypescript = selectedApps.includes('server') || db.orm !== 'none';
-  if (!includeTypescript) {
-    includeTypescript = await askTypescript();
-  }
+  const gitHook = await askGitHooks();
+  const includeTypescript = await askTypescript();
 
   return {
-    name,
-    projectPath,
-    gitInitialized,
+    name: '',
+    projectPath: '',
+    gitInitialized: false,
     selectedApps,
-    serverRuntime,
     db,
     setupRedis,
     linter,

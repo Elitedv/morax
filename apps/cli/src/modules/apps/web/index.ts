@@ -12,17 +12,17 @@ export async function addWeb(projectPath: string) {
       {
         value: 'nextjs',
         label: 'Next.js',
-        hint: 'The React Framework for the Web',
+        hint: 'App Router',
       },
       {
         value: 'react',
         label: 'React (Vite)',
-        hint: 'Vite React Starter Template',
+        hint: 'Vite',
       },
       {
         value: 'skip',
-        label: 'Skip',
-        hint: 'Skip setting up a frontend website',
+        label: 'None',
+        hint: 'Skip',
       },
     ],
     initialValue: 'nextjs',

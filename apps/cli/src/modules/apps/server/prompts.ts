@@ -9,17 +9,17 @@ export async function promptServerFramework(): Promise<ServerFramework> {
       {
         value: 'express',
         label: 'Express',
-        hint: 'Fast, unopinionated, minimalist web framework for Node & Bun',
+        hint: 'Minimalist & flexible',
       },
       {
         value: 'hono',
         label: 'Hono',
-        hint: 'Ultrafast, lightweight, web-standards framework with first-class TypeScript',
+        hint: 'Web-standards & fast',
       },
       {
         value: 'none',
         label: 'None',
-        hint: 'Skip backend server setup',
+        hint: 'Skip',
       },
     ],
     initialValue: 'express',
@@ -39,17 +39,17 @@ export async function promptServerDeployment(
       {
         value: 'docker',
         label: 'Docker',
-        hint: 'Generate Dockerfile in apps/server for containerized deployment',
+        hint: 'Dockerfile',
       },
       {
         value: 'vercel',
         label: 'Vercel',
-        hint: 'Generate vercel.json in apps/server for serverless deployment',
+        hint: 'Serverless',
       },
       {
         value: 'none',
         label: 'None',
-        hint: 'Skip deployment configuration',
+        hint: 'Skip',
       },
     ],
     initialValue: 'docker',

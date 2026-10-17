@@ -38,6 +38,7 @@ export function renderWebEnvTemplate(options: EnvSetupOptions): string {
     '}',
     '',
     'export const env = (isSkip ? ({} as z.infer<typeof webSchema>) : parsed.data)!;',
+    'export const web = env;',
     'export type WebEnv = z.infer<typeof webSchema>;',
     '',
   ].join('\n');

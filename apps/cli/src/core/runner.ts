@@ -24,6 +24,8 @@ import { runNextScaffolder } from '../standalone/next-runner.js';
 
 import { makeDirectories } from '../modules/workspace/directories.js';
 import { setupReadme } from '../modules/workspace/readme.js';
+import { promptAndSetupExtras } from '../modules/workspace/extras.js';
+import { promptAndInstallSkills } from '../modules/skills/index.js';
 import { setupRootEnv } from '../modules/workspace/env.js';
 import { runGitSetup } from '../modules/git/git.js';
 import { runHuskySetup } from '../modules/git/husky.js';
@@ -220,6 +222,35 @@ export async function runWorkspaceScaffolder(
       redis: setupRedis,
     },
   });
+
+  // =========================================================================
+  // STEP 7: Documentation, AI Agent Guidelines & License (Optional)
+  // =========================================================================
+  await promptAndSetupExtras(projectPath, {
+    projectName: name,
+    hasServer: serverFramework !== 'none',
+    serverFramework: serverFramework !== 'none' ? serverFramework : undefined,
+    serverRuntime: serverFramework !== 'none' ? serverRuntime : undefined,
+    hasDb: dbConfig.orm !== 'none',
+    orm: dbConfig.orm === 'drizzle' ? 'drizzle' : undefined,
+    dbDialect: dbConfig.dialect,
+    postgresProvider: dbConfig.postgresProvider,
+    hasDocker: isPostgresDocker || setupRedis,
+    dockerServices: {
+      postgres: isPostgresDocker,
+      redis: setupRedis,
+    },
+    hasRedis: setupRedis,
+    webFramework,
+    linter,
+    formatter,
+    hasEnv: shouldSetupEnv,
+  });
+
+  // =========================================================================
+  // STEP 8: Curated AI Agent Skills (skills.sh) (Optional)
+  // =========================================================================
+  await promptAndInstallSkills(projectPath);
 
   // Final pnpm install to resolve all workspace packages, symlinks & dependencies
   const s = spinner();
