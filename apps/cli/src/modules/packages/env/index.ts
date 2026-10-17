@@ -6,6 +6,8 @@ import handleCancel from '../../../utils/isCancel.js';
 import type { EnvSetupOptions } from './types.js';
 import { getEnvPackageJson } from './package.js';
 import { renderServerEnvTemplate } from './templates/server.js';
+import { renderDbEnvTemplate } from './templates/db.js';
+import { renderDockerEnvTemplate } from './templates/docker.js';
 import { renderWebEnvTemplate } from './templates/web.js';
 import { renderIndexEnvTemplate } from './templates/index.js';
 
@@ -42,8 +44,138 @@ export async function addDependencyToPackage(
   }
 }
 
+async function updateDbForEnv(projectPath: string, dialect?: string) {
+  const dbDir = path.join(projectPath, 'packages', 'db');
+  const clientFile = path.join(dbDir, 'src', 'client.ts');
+  const drizzleConfigFile = path.join(dbDir, 'drizzle.config.ts');
+
+  // 1. Update src/client.ts to use @repo/env/db
+  try {
+    const content = await fsPromises.readFile(clientFile, 'utf8');
+    let newContent = '';
+
+    if (content.includes('drizzle-orm/libsql')) {
+      newContent = [
+        "import { drizzle } from 'drizzle-orm/libsql';",
+        "import { createClient } from '@libsql/client';",
+        "import { env } from '@repo/env/db';",
+        "import * as schema from './schema/index.js';",
+        '',
+        'export const client = createClient({ url: env.DB_FILE_NAME });',
+        'export const db = drizzle({ client, schema });',
+        'export type Database = typeof db;',
+        '',
+      ].join('\n');
+    } else if (content.includes('drizzle-orm/neon-serverless')) {
+      newContent = [
+        "import { drizzle } from 'drizzle-orm/neon-serverless';",
+        "import { Pool } from '@neondatabase/serverless';",
+        "import { env } from '@repo/env/db';",
+        "import * as schema from './schema/index.js';",
+        '',
+        'export const pool = new Pool({',
+        '  connectionString: env.DATABASE_URL,',
+        '});',
+        '',
+        'export const db = drizzle({ client: pool, schema } as any);',
+        'export type Database = typeof db;',
+        '',
+      ].join('\n');
+    } else if (content.includes('drizzle-orm/neon-http')) {
+      newContent = [
+        "import { drizzle } from 'drizzle-orm/neon-http';",
+        "import { neon } from '@neondatabase/serverless';",
+        "import { env } from '@repo/env/db';",
+        "import * as schema from './schema/index.js';",
+        '',
+        'export const sql = neon(env.DATABASE_URL);',
+        'export const db = drizzle({ client: sql, schema });',
+        'export type Database = typeof db;',
+        '',
+      ].join('\n');
+    } else if (content.includes('drizzle-orm/node-postgres')) {
+      newContent = [
+        "import { drizzle } from 'drizzle-orm/node-postgres';",
+        "import { Pool } from 'pg';",
+        "import { env } from '@repo/env/db';",
+        "import * as schema from './schema/index.js';",
+        '',
+        'export const pool = new Pool({',
+        '  connectionString: env.DATABASE_URL,',
+        '});',
+        '',
+        'export const db = drizzle({ client: pool, schema } as any);',
+        'export type Database = typeof db;',
+        '',
+      ].join('\n');
+    }
+
+    if (newContent) {
+      await fsPromises.writeFile(clientFile, newContent, 'utf8');
+    }
+  } catch {
+    // If client.ts is not present, skip
+  }
+
+  // 2. Update drizzle.config.ts to use @repo/env/db
+  try {
+    const isSqlite = dialect === 'sqlite';
+    const envVar = isSqlite ? 'DB_FILE_NAME' : 'DATABASE_URL';
+    const dbDialect = dialect || 'postgresql';
+    const newDrizzleConfig = [
+      "import { defineConfig } from 'drizzle-kit';",
+      "import { env } from '@repo/env/db';",
+      '',
+      'export default defineConfig({',
+      "  out: './drizzle',",
+      "  schema: './src/schema/index.ts',",
+      `  dialect: '${dbDialect}',`,
+      '  dbCredentials: {',
+      `    url: env.${envVar},`,
+      '  },',
+      '});',
+      '',
+    ].join('\n');
+    await fsPromises.writeFile(drizzleConfigFile, newDrizzleConfig, 'utf8');
+  } catch {
+    // If drizzle.config.ts is not present, skip
+  }
+}
+
+async function updateServerEntryForEnv(projectPath: string) {
+  const indexFile = path.join(projectPath, 'apps', 'server', 'src', 'index.ts');
+  try {
+    let content = await fsPromises.readFile(indexFile, 'utf8');
+
+    if (!content.includes('@repo/env/server')) {
+      content = "import { env } from '@repo/env/server';\n" + content;
+    }
+
+    // Replace process.env.PORT throw check with env.PORT
+    content = content.replace(
+      /if \(!process\.env\.PORT\) \{[\s\S]*?const port = Number\(process\.env\.PORT\);/,
+      'const port = env.PORT;',
+    );
+
+    // Replace app.use(cors()) with origin from env
+    content = content.replace(
+      /app\.use\(cors\(\)\);/,
+      'app.use(cors({ origin: env.CORS_ORIGIN }));',
+    );
+    content = content.replace(
+      /app\.use\('\*', cors\(\)\);/,
+      "app.use('*', cors({ origin: env.CORS_ORIGIN }));",
+    );
+
+    await fsPromises.writeFile(indexFile, content, 'utf8');
+  } catch {
+    // If apps/server entry is not present, skip
+  }
+}
+
 export async function setupEnvPackage(options: EnvSetupOptions) {
-  const { projectPath, hasDb, hasServer, webFramework } = options;
+  const { projectPath, hasDb, dbDialect, hasServer, hasDocker, webFramework } =
+    options;
   const envDir = path.join(projectPath, 'packages', 'env');
   const srcDir = path.join(envDir, 'src');
 
@@ -83,23 +215,40 @@ export async function setupEnvPackage(options: EnvSetupOptions) {
     );
   }
 
-  // 5. Generate src/web.ts if frontend web is present
+  // 5. Generate src/db.ts if db is present
+  if (hasDb) {
+    const dbCode = renderDbEnvTemplate(options);
+    await fsPromises.writeFile(path.join(srcDir, 'db.ts'), dbCode, 'utf8');
+  }
+
+  // 6. Generate src/docker.ts if docker is configured
+  if (hasDocker) {
+    const dockerCode = renderDockerEnvTemplate(options);
+    await fsPromises.writeFile(
+      path.join(srcDir, 'docker.ts'),
+      dockerCode,
+      'utf8',
+    );
+  }
+
+  // 7. Generate src/web.ts if frontend web is present
   if (webFramework !== 'skip') {
     const webCode = renderWebEnvTemplate(options);
     await fsPromises.writeFile(path.join(srcDir, 'web.ts'), webCode, 'utf8');
   }
 
-  // 6. Generate src/index.ts
+  // 8. Generate src/index.ts
   const indexCode = renderIndexEnvTemplate(options);
   await fsPromises.writeFile(path.join(srcDir, 'index.ts'), indexCode, 'utf8');
 
-  // 7. Wire @repo/env into packages/db, apps/server, and apps/web
+  // 9. Wire @repo/env into packages/db, apps/server, and apps/web
   if (hasDb) {
     await addDependencyToPackage(
       path.join(projectPath, 'packages', 'db', 'package.json'),
       '@repo/env',
       'workspace:*',
     );
+    await updateDbForEnv(projectPath, dbDialect);
   }
 
   if (hasServer) {
@@ -108,6 +257,7 @@ export async function setupEnvPackage(options: EnvSetupOptions) {
       '@repo/env',
       'workspace:*',
     );
+    await updateServerEntryForEnv(projectPath);
   }
 
   if (webFramework !== 'skip') {

@@ -1,7 +1,7 @@
 import type { EnvSetupOptions } from './types.js';
 
 export function getEnvPackageJson(options: EnvSetupOptions) {
-  const { hasServer, hasDb, webFramework } = options;
+  const { hasServer, hasDb, hasDocker, webFramework } = options;
 
   const exportsMap: Record<string, string> = {
     '.': './src/index.ts',
@@ -9,6 +9,14 @@ export function getEnvPackageJson(options: EnvSetupOptions) {
 
   if (hasServer || hasDb) {
     exportsMap['./server'] = './src/server.ts';
+  }
+
+  if (hasDb) {
+    exportsMap['./db'] = './src/db.ts';
+  }
+
+  if (hasDocker) {
+    exportsMap['./docker'] = './src/docker.ts';
   }
 
   if (webFramework !== 'skip') {

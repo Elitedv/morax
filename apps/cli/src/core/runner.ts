@@ -43,7 +43,7 @@ import {
   setupServerDeployment,
 } from '../modules/apps/server/index.js';
 import { addWeb } from '../modules/apps/web/index.js';
-import { runEnvSetup } from '../modules/packages/env/index.js';
+import { runEnvSetup, promptEnv } from '../modules/packages/env/index.js';
 import { setupDocker } from '../modules/docker/index.js';
 import type { GitHookType, ServerRuntime } from '../types/index.js';
 
@@ -185,19 +185,7 @@ export async function runWorkspaceScaffolder(
   const webFramework = await addWeb(projectPath);
 
   // =========================================================================
-  // STEP 5: Type-Safe Environment Package (@repo/env)
-  // =========================================================================
-  await runEnvSetup(projectPath, {
-    projectPath,
-    hasDb: dbConfig.orm !== 'none',
-    dbDialect: dbConfig.dialect,
-    hasRedis: setupRedis,
-    hasServer: serverFramework !== 'none',
-    webFramework,
-  });
-
-  // =========================================================================
-  // STEP 6: Finalization & Environment
+  // STEP 5: Root Environment Configuration (.env, .env.example)
   // =========================================================================
   await setupRootEnv(projectPath, {
     db: dbConfig,
@@ -205,6 +193,23 @@ export async function runWorkspaceScaffolder(
     hasServer: serverFramework !== 'none',
     webFramework,
   });
+
+  // =========================================================================
+  // STEP 6: Type-Safe Environment Package (@repo/env) (Optional)
+  // =========================================================================
+  const shouldSetupEnv = await promptEnv();
+  if (shouldSetupEnv) {
+    await runEnvSetup(projectPath, {
+      projectPath,
+      hasDb: dbConfig.orm !== 'none',
+      dbDialect: dbConfig.dialect,
+      postgresProvider: dbConfig.postgresProvider,
+      hasDocker: isPostgresDocker || setupRedis,
+      hasRedis: setupRedis,
+      hasServer: serverFramework !== 'none',
+      webFramework,
+    });
+  }
 
   await setupReadme(projectPath, name, {
     hasDb: dbConfig.orm !== 'none',

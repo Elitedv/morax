@@ -148,10 +148,6 @@ export async function setupDrizzle(
     dbPkg.scripts.lint = 'oxlint .';
   }
 
-  dbPkg.dependencies = {
-    '@repo/env': 'workspace:*',
-  };
-
   dbPkg.devDependencies = {
     '@config/typescript': 'workspace:*',
   };
@@ -297,16 +293,28 @@ export async function setupDrizzle(
     'utf8',
   );
 
-  // 8. Generate src/client.ts using type-safe @repo/env/server
+  // 8. Generate src/client.ts with strict environment variable checks
   let clientContent: string;
   if (dialect === 'sqlite') {
     clientContent = [
+      "import { config } from 'dotenv';",
+      "import path from 'node:path';",
+      "import { fileURLToPath } from 'node:url';",
       "import { drizzle } from 'drizzle-orm/libsql';",
       "import { createClient } from '@libsql/client';",
-      "import { env } from '@repo/env/server';",
       "import * as schema from './schema/index.js';",
       '',
-      'export const client = createClient({ url: env.DB_FILE_NAME });',
+      'const srcDir = path.dirname(fileURLToPath(import.meta.url));',
+      "const workspaceRoot = path.resolve(srcDir, '../../..');",
+      "const packageRoot = path.resolve(srcDir, '..');",
+      "config({ path: path.join(workspaceRoot, '.env') });",
+      "config({ path: path.join(packageRoot, '.env'), override: true });",
+      '',
+      'if (!process.env.DB_FILE_NAME) {',
+      "  throw new Error('DB_FILE_NAME environment variable is required');",
+      '}',
+      '',
+      'export const client = createClient({ url: process.env.DB_FILE_NAME });',
       'export const db = drizzle({ client, schema });',
       'export type Database = typeof db;',
       '',
@@ -315,28 +323,52 @@ export async function setupDrizzle(
     if (neonMode === 'pool') {
       // Neon WebSocket Pool
       clientContent = [
+        "import { config } from 'dotenv';",
+        "import path from 'node:path';",
+        "import { fileURLToPath } from 'node:url';",
         "import { drizzle } from 'drizzle-orm/neon-serverless';",
         "import { Pool } from '@neondatabase/serverless';",
-        "import { env } from '@repo/env/server';",
         "import * as schema from './schema/index.js';",
         '',
+        'const srcDir = path.dirname(fileURLToPath(import.meta.url));',
+        "const workspaceRoot = path.resolve(srcDir, '../../..');",
+        "const packageRoot = path.resolve(srcDir, '..');",
+        "config({ path: path.join(workspaceRoot, '.env') });",
+        "config({ path: path.join(packageRoot, '.env'), override: true });",
+        '',
+        'if (!process.env.DATABASE_URL) {',
+        "  throw new Error('DATABASE_URL environment variable is required');",
+        '}',
+        '',
         'export const pool = new Pool({',
-        '  connectionString: env.DATABASE_URL,',
+        '  connectionString: process.env.DATABASE_URL,',
         '});',
         '',
-        'export const db = drizzle({ client: pool, schema });',
+        'export const db = drizzle({ client: pool, schema } as any);',
         'export type Database = typeof db;',
         '',
       ].join('\n');
     } else {
       // Neon Serverless HTTP
       clientContent = [
+        "import { config } from 'dotenv';",
+        "import path from 'node:path';",
+        "import { fileURLToPath } from 'node:url';",
         "import { drizzle } from 'drizzle-orm/neon-http';",
         "import { neon } from '@neondatabase/serverless';",
-        "import { env } from '@repo/env/server';",
         "import * as schema from './schema/index.js';",
         '',
-        'export const sql = neon(env.DATABASE_URL);',
+        'const srcDir = path.dirname(fileURLToPath(import.meta.url));',
+        "const workspaceRoot = path.resolve(srcDir, '../../..');",
+        "const packageRoot = path.resolve(srcDir, '..');",
+        "config({ path: path.join(workspaceRoot, '.env') });",
+        "config({ path: path.join(packageRoot, '.env'), override: true });",
+        '',
+        'if (!process.env.DATABASE_URL) {',
+        "  throw new Error('DATABASE_URL environment variable is required');",
+        '}',
+        '',
+        'export const sql = neon(process.env.DATABASE_URL);',
         'export const db = drizzle({ client: sql, schema });',
         'export type Database = typeof db;',
         '',
@@ -345,16 +377,28 @@ export async function setupDrizzle(
   } else {
     // Docker / standard PostgreSQL (node-postgres Pool)
     clientContent = [
+      "import { config } from 'dotenv';",
+      "import path from 'node:path';",
+      "import { fileURLToPath } from 'node:url';",
       "import { drizzle } from 'drizzle-orm/node-postgres';",
       "import { Pool } from 'pg';",
-      "import { env } from '@repo/env/server';",
       "import * as schema from './schema/index.js';",
       '',
+      'const srcDir = path.dirname(fileURLToPath(import.meta.url));',
+      "const workspaceRoot = path.resolve(srcDir, '../../..');",
+      "const packageRoot = path.resolve(srcDir, '..');",
+      "config({ path: path.join(workspaceRoot, '.env') });",
+      "config({ path: path.join(packageRoot, '.env'), override: true });",
+      '',
+      'if (!process.env.DATABASE_URL) {',
+      "  throw new Error('DATABASE_URL environment variable is required');",
+      '}',
+      '',
       'export const pool = new Pool({',
-      '  connectionString: env.DATABASE_URL,',
+      '  connectionString: process.env.DATABASE_URL,',
       '});',
       '',
-      'export const db = drizzle({ client: pool, schema });',
+      'export const db = drizzle({ client: pool, schema } as any);',
       'export type Database = typeof db;',
       '',
     ].join('\n');

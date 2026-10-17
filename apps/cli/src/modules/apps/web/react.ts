@@ -160,7 +160,7 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
         if (!content.includes('resolve:')) {
           content = content.replace(
             /(plugins:\s*\[[^\]]*\]),?/,
-            `$1,\n  resolve: {\n    alias: {\n      "@": path.resolve(__dirname, "./src"),\n    },\n  }`,
+            `$1,\n  resolve: {\n    alias: {\n      "@": path.resolve(import.meta.dirname, "./src"),\n    },\n  }`,
           );
         }
         await fsPromises.writeFile(viteConfigPath, content, 'utf8');

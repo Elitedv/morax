@@ -102,16 +102,16 @@ export async function setupDocker(
       const pkg = JSON.parse(raw);
       pkg.scripts = pkg.scripts || {};
       pkg.scripts['docker:up'] =
-        'docker compose -f docker/docker-compose.yml up -d';
+        'docker compose --env-file .env -f docker/docker-compose.yml up -d';
       pkg.scripts['docker:down'] =
-        'docker compose -f docker/docker-compose.yml down';
+        'docker compose --env-file .env -f docker/docker-compose.yml down';
       if (options.postgres) {
         pkg.scripts['docker:db'] =
-          'docker compose -f docker/docker-compose.yml --profile postgres up -d';
+          'docker compose --env-file .env -f docker/docker-compose.yml --profile postgres up -d';
       }
       if (options.redis) {
         pkg.scripts['docker:redis'] =
-          'docker compose -f docker/docker-compose.yml --profile redis up -d';
+          'docker compose --env-file .env -f docker/docker-compose.yml --profile redis up -d';
       }
       await fsPromises.writeFile(
         rootPkgPath,

@@ -38,12 +38,11 @@ export async function setupExpress(options: ServerSetupOptions) {
     '@config/typescript': 'workspace:*',
   };
 
-  serverPkg.dependencies = {
-    '@repo/env': 'workspace:*',
-  };
-
   if (hasDb) {
-    serverPkg.dependencies['@repo/db'] = 'workspace:*';
+    serverPkg.dependencies = {
+      ...(serverPkg.dependencies || {}),
+      '@repo/db': 'workspace:*',
+    };
   }
 
   delete serverPkg.keywords;

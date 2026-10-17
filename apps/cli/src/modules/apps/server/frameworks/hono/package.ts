@@ -18,7 +18,9 @@ export function getHonoDevDependencies(runtime: ServerRuntime): string[] {
 export function getHonoScripts(runtime: ServerRuntime, linter?: string) {
   const scripts: Record<string, string> = {
     dev:
-      runtime === 'bun' ? 'bun --watch src/index.ts' : 'tsx watch src/index.ts',
+      runtime === 'bun'
+        ? 'cd ../.. && bun --watch apps/server/src/index.ts'
+        : 'tsx watch src/index.ts',
     build: 'tsdown',
     start: runtime === 'bun' ? 'bun dist/index.js' : 'node dist/index.js',
     check: 'tsc --noEmit',
