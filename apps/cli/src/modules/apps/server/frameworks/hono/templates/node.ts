@@ -1,0 +1,58 @@
+export function renderHonoNodeTemplate(hasDb: boolean): string {
+  const dbImport = hasDb ? ["import { db, users } from '@repo/db';"] : [];
+  const dbRoute = hasDb
+    ? [
+        '// Example endpoint querying shared database package (Drizzle ORM)',
+        "app.get('/api/users', async (c) => {",
+        '  try {',
+        '    const allUsers = await db.select().from(users);',
+        '    return c.json({ users: allUsers });',
+        '  } catch (error: any) {',
+        '    return c.json({ error: error.message }, 500);',
+        '  }',
+        '});',
+        '',
+      ]
+    : [];
+
+  return [
+    "import { Hono } from 'hono';",
+    "import { serve } from '@hono/node-server';",
+    "import { getRequestListener } from '@hono/node-server';",
+    "import { cors } from 'hono/cors';",
+    "import { env } from '@repo/env/server';",
+    ...dbImport,
+    '',
+    'const app = new Hono();',
+    'const port = env.PORT;',
+    '',
+    '// Enable CORS middleware',
+    "app.use('*', cors({ origin: env.CORS_ORIGIN }));",
+    '',
+    '// Root API health and welcome route',
+    "app.get('/api', (c) => {",
+    '  return c.json({',
+    "    message: 'Welcome to the Morax High-Performance Hono API (Node.js)!',",
+    '    timestamp: new Date().toISOString(),',
+    "    status: 'healthy',",
+    '  });',
+    '});',
+    '',
+    ...dbRoute,
+    "if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {",
+    '  serve(',
+    '    {',
+    '      fetch: app.fetch,',
+    '      port,',
+    '    },',
+    '    (info) => {',
+    '      console.log(`🚀 Hono server running on http://localhost:${info.port}`);',
+    '    },',
+    '  );',
+    '}',
+    '',
+    'export { app };',
+    'export default getRequestListener(app.fetch);',
+    '',
+  ].join('\n');
+}

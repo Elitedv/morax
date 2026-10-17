@@ -156,6 +156,28 @@ export async function askTypescript(): Promise<boolean> {
   return choice === 'yes';
 }
 
+export async function askRedis(): Promise<boolean> {
+  const choice = await select({
+    message: 'Do you want to setup Redis using Docker?',
+    options: [
+      {
+        value: 'yes',
+        label: 'Yes',
+        hint: 'Pre-configured Redis container in docker/docker-compose.yml',
+      },
+      {
+        value: 'no',
+        label: 'No',
+        hint: 'Skip Redis setup',
+      },
+    ],
+    initialValue: 'no',
+  });
+
+  handleCancel(choice);
+  return choice === 'yes';
+}
+
 export async function gatherWorkspaceAnswers(
   name: string,
   projectPath: string,
@@ -169,6 +191,7 @@ export async function gatherWorkspaceAnswers(
   }
 
   const db = await promptDatabase();
+  const setupRedis = await askRedis();
   const linter = await askLinter();
   const formatter = await askFormatter();
 
@@ -189,6 +212,7 @@ export async function gatherWorkspaceAnswers(
     selectedApps,
     serverRuntime,
     db,
+    setupRedis,
     linter,
     formatter,
     gitHook,

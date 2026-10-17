@@ -1,7 +1,7 @@
 import { select } from '@clack/prompts';
 import handleCancel from '../../../utils/isCancel.js';
 import { promptDrizzle, runDrizzleSetup } from './drizzle.js';
-import type { DbSelection, OrmType } from '../../../types/index.js';
+import type { DbDialect, DbSelection, OrmType } from '../../../types/index.js';
 
 export type { OrmType, DbSelection };
 
@@ -12,7 +12,7 @@ export async function promptDatabase(): Promise<DbSelection> {
       {
         value: 'drizzle',
         label: 'Drizzle ORM',
-        hint: 'Lightweight, SQL-like TypeScript ORM (PostgreSQL)',
+        hint: 'Lightweight, SQL-like TypeScript ORM (PostgreSQL, SQLite)',
       },
       {
         value: 'none',
@@ -26,8 +26,13 @@ export async function promptDatabase(): Promise<DbSelection> {
   handleCancel(ormChoice);
 
   if (ormChoice === 'drizzle') {
-    const dialect = await promptDrizzle();
-    return { orm: 'drizzle', dialect };
+    const config = await promptDrizzle();
+    return {
+      orm: 'drizzle',
+      dialect: config.dialect,
+      postgresProvider: config.postgresProvider,
+      neonMode: config.neonMode,
+    };
   }
 
   return { orm: 'none' };
@@ -39,6 +44,12 @@ export async function runDatabaseSetup(
   linter: string = 'none',
 ) {
   if (selection.orm === 'drizzle' && selection.dialect) {
-    await runDrizzleSetup(projectPath, selection.dialect, linter);
+    await runDrizzleSetup(
+      projectPath,
+      selection.dialect,
+      linter,
+      selection.postgresProvider,
+      selection.neonMode,
+    );
   }
 }

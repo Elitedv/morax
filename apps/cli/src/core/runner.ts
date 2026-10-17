@@ -3,8 +3,19 @@ import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 
 import { startCli } from './startcli.js';
+import {
+  runPreflightChecks,
+  checkTargetDirectory,
+  checkBunAvailable,
+} from './preflight.js';
 import { promptWorkspaceName } from './workspaceName.js';
-import { gatherWorkspaceAnswers } from './prompts.js';
+import {
+  askLinter,
+  askFormatter,
+  askGitHooks,
+  askRedis,
+  askServerRuntime,
+} from './prompts.js';
 import { endCli } from './endcli.js';
 import { runCommand } from '../utils/exec.js';
 
@@ -13,6 +24,7 @@ import { runNextScaffolder } from '../standalone/next-runner.js';
 
 import { makeDirectories } from '../modules/workspace/directories.js';
 import { setupReadme } from '../modules/workspace/readme.js';
+import { setupRootEnv } from '../modules/workspace/env.js';
 import { runGitSetup } from '../modules/git/git.js';
 import { runHuskySetup } from '../modules/git/husky.js';
 import { runLefthookSetup } from '../modules/git/lefthook.js';
@@ -20,9 +32,20 @@ import { runBiomeSetup } from '../modules/quality/biome.js';
 import { runOxlintSetup } from '../modules/quality/oxlint.js';
 import { runPrettierSetup } from '../modules/quality/prettier.js';
 import { runTypescriptSetup } from '../modules/packages/typescript.js';
-import { runDatabaseSetup } from '../modules/packages/db/index.js';
-import { runServerSetup } from '../modules/apps/server/index.js';
+import {
+  runDatabaseSetup,
+  promptDatabase,
+} from '../modules/packages/db/index.js';
+import {
+  runServerSetup,
+  promptServerFramework,
+  promptServerDeployment,
+  setupServerDeployment,
+} from '../modules/apps/server/index.js';
 import { addWeb } from '../modules/apps/web/index.js';
+import { runEnvSetup } from '../modules/packages/env/index.js';
+import { setupDocker } from '../modules/docker/index.js';
+import type { GitHookType, ServerRuntime } from '../types/index.js';
 
 export async function runWorkspaceScaffolder(
   options: { react?: boolean; next?: boolean } = {},
@@ -30,11 +53,17 @@ export async function runWorkspaceScaffolder(
   // 1. Greet and display premium logo
   startCli();
 
+  // 2. Preflight checks (Enforce Node.js v22+ and check tools)
+  await runPreflightChecks();
+
   const isMonorepo = !options.react && !options.next;
 
-  // 2. Prompt for Name (Optional, defaults to morax-workspace or my-app)
+  // 3. Prompt for Name (Optional, defaults to morax-workspace or my-app)
   const name = await promptWorkspaceName(isMonorepo);
   const projectPath = path.join(process.cwd(), name);
+
+  // 4. Verify target directory is clean and available
+  await checkTargetDirectory(projectPath, name);
 
   if (options.react) {
     await runReactScaffolder(name, projectPath);
@@ -46,81 +75,148 @@ export async function runWorkspaceScaffolder(
     return;
   }
 
-  // 3. Prompt and execute directories and workspace config generation
+  // 5. Initialize workspace folders and pnpm-workspace.yaml
   await makeDirectories(name, projectPath);
 
-  // 4. Prompt and execute Git initialization
+  // 6. Prompt and execute Git initialization
   const gitInitialized = await runGitSetup(projectPath);
 
-  // 5. Gather all workspace configuration choices interactively
-  const answers = await gatherWorkspaceAnswers(
-    name,
-    projectPath,
-    gitInitialized,
-  );
+  // =========================================================================
+  // STEP 1: Code Quality & Linting (Ask -> Setup)
+  // =========================================================================
+  const linter = await askLinter();
+  const formatter = await askFormatter();
 
-  // 6. Execute Biome setup if Biome was chosen for either linting or formatting
-  if (answers.linter === 'biome' || answers.formatter === 'biome') {
+  let gitHook: GitHookType = 'none';
+  if (gitInitialized) {
+    gitHook = await askGitHooks();
+  }
+
+  // Execute Biome setup if Biome was chosen for either linting or formatting
+  if (linter === 'biome' || formatter === 'biome') {
     await runBiomeSetup(projectPath, {
-      linter: answers.linter === 'biome',
-      formatter: answers.formatter === 'biome',
+      linter: linter === 'biome',
+      formatter: formatter === 'biome',
     });
   }
 
-  // 7. Execute Oxlint setup if selected
-  if (answers.linter === 'oxlint') {
+  // Execute Oxlint setup if selected
+  if (linter === 'oxlint') {
     await runOxlintSetup(projectPath);
   }
 
-  // 8. Execute Prettier setup if selected
-  if (answers.formatter === 'prettier') {
+  // Execute Prettier setup if selected
+  if (formatter === 'prettier') {
     await runPrettierSetup(projectPath);
   }
 
-  // 9. Execute Git hooks setup (Lefthook or Husky)
-  if (answers.gitHook === 'lefthook') {
+  // Execute Git hooks setup (Lefthook or Husky)
+  if (gitHook === 'lefthook') {
     await runLefthookSetup(
       projectPath,
       gitInitialized,
-      answers.formatter !== 'none',
-      answers.linter !== 'none',
+      formatter !== 'none',
+      linter !== 'none',
     );
-  } else if (answers.gitHook === 'husky') {
+  } else if (gitHook === 'husky') {
     await runHuskySetup(projectPath, gitInitialized);
   }
 
-  // 10. Execute TypeScript setup if selected
-  if (answers.includeTypescript) {
-    await runTypescriptSetup(projectPath);
+  // Execute modular TypeScript setup in packages/typescript
+  await runTypescriptSetup(projectPath);
+
+  // =========================================================================
+  // STEP 2: Database Layer (Ask -> Setup)
+  // =========================================================================
+  const dbConfig = await promptDatabase();
+  const setupRedis = await askRedis();
+
+  if (dbConfig.orm !== 'none') {
+    await runDatabaseSetup(projectPath, dbConfig, linter);
   }
 
-  // 11. Execute Database setup (Drizzle ORM) in packages/db if selected
-  if (answers.db.orm !== 'none') {
-    await runDatabaseSetup(projectPath, answers.db, answers.linter);
+  // Setup root Docker infrastructure if Postgres (Docker) or Redis is selected
+  const isPostgresDocker =
+    dbConfig.orm === 'drizzle' &&
+    dbConfig.dialect === 'postgresql' &&
+    dbConfig.postgresProvider === 'docker';
+
+  if (isPostgresDocker || setupRedis) {
+    await setupDocker(projectPath, {
+      projectName: name,
+      postgres: isPostgresDocker,
+      redis: setupRedis,
+    });
   }
 
-  // 12. Execute Express Backend setup if selected
-  if (answers.selectedApps.includes('server')) {
+  // =========================================================================
+  // STEP 3: Backend Server (Ask -> Setup)
+  // =========================================================================
+  const serverFramework = await promptServerFramework();
+  let serverRuntime: ServerRuntime = 'node';
+  if (serverFramework !== 'none') {
+    serverRuntime = await askServerRuntime();
+    if (serverRuntime === 'bun') {
+      await checkBunAvailable();
+    }
     await runServerSetup(
       projectPath,
-      answers.linter,
-      answers.db.orm,
-      answers.serverRuntime || 'node',
+      serverFramework,
+      linter,
+      dbConfig.orm,
+      serverRuntime,
     );
+
+    // Server Deployment Configuration (apps/server)
+    const deployTarget = await promptServerDeployment(serverFramework);
+    if (deployTarget !== 'none') {
+      await setupServerDeployment({
+        projectPath,
+        framework: serverFramework,
+        runtime: serverRuntime,
+        target: deployTarget,
+      });
+    }
   }
 
-  // 13. Execute Next.js/Vite Frontend setup if selected
-  if (answers.selectedApps.includes('web')) {
-    await addWeb(projectPath);
-  }
+  // =========================================================================
+  // STEP 4: Frontend Web Application (Ask -> Setup)
+  // =========================================================================
+  const webFramework = await addWeb(projectPath);
 
-  // 14. Add the root README with configured packages/apps
-  await setupReadme(projectPath, name, {
-    hasDb: answers.db.orm !== 'none',
-    orm: answers.db.orm,
+  // =========================================================================
+  // STEP 5: Type-Safe Environment Package (@repo/env)
+  // =========================================================================
+  await runEnvSetup(projectPath, {
+    projectPath,
+    hasDb: dbConfig.orm !== 'none',
+    dbDialect: dbConfig.dialect,
+    hasRedis: setupRedis,
+    hasServer: serverFramework !== 'none',
+    webFramework,
   });
 
-  // 15. Run final pnpm install to resolve all workspace configurations and symlinks
+  // =========================================================================
+  // STEP 6: Finalization & Environment
+  // =========================================================================
+  await setupRootEnv(projectPath, {
+    db: dbConfig,
+    redis: setupRedis,
+    hasServer: serverFramework !== 'none',
+    webFramework,
+  });
+
+  await setupReadme(projectPath, name, {
+    hasDb: dbConfig.orm !== 'none',
+    orm: dbConfig.orm,
+    hasDocker: isPostgresDocker || setupRedis,
+    dockerServices: {
+      postgres: isPostgresDocker,
+      redis: setupRedis,
+    },
+  });
+
+  // Final pnpm install to resolve all workspace packages, symlinks & dependencies
   const s = spinner();
   s.start('Running final workspace package installation...');
   try {
@@ -135,9 +231,14 @@ export async function runWorkspaceScaffolder(
     console.error(pc.red(`\nError details: ${error.message || error}`));
   }
 
-  // 16. Complete and show beautiful finish screen
+  // Complete and show finish screen
   endCli(name, projectPath, {
-    hasDb: answers.db.orm !== 'none',
-    orm: answers.db.orm,
+    hasDb: dbConfig.orm !== 'none',
+    orm: dbConfig.orm,
+    hasDocker: isPostgresDocker || setupRedis,
+    dockerServices: {
+      postgres: isPostgresDocker,
+      redis: setupRedis,
+    },
   });
 }

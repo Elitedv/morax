@@ -4,9 +4,33 @@ import path from 'path';
 export async function setupReadme(
   projectPath: string,
   workspaceName: string,
-  options: { hasDb?: boolean; orm?: 'drizzle' | 'none' } = {},
+  options: {
+    hasDb?: boolean;
+    orm?: 'drizzle' | 'none';
+    hasDocker?: boolean;
+    dockerServices?: { postgres?: boolean; redis?: boolean };
+  } = {},
 ) {
   const readmePath = path.join(projectPath, 'README.md');
+
+  let dockerDocs: string[] = [];
+  if (options.hasDocker) {
+    dockerDocs = [
+      '### Docker Infrastructure',
+      'Manage local services from the workspace root:',
+      '```bash',
+      'pnpm docker:up       # Start all local docker services in background',
+      'pnpm docker:down     # Stop all local docker services',
+      ...(options.dockerServices?.postgres
+        ? ['pnpm docker:db       # Start PostgreSQL service only']
+        : []),
+      ...(options.dockerServices?.redis
+        ? ['pnpm docker:redis    # Start Redis service only']
+        : []),
+      '```',
+      '',
+    ];
+  }
 
   let dbDocs: string[] = [];
   if (options.hasDb && options.orm === 'drizzle') {
@@ -32,6 +56,11 @@ export async function setupReadme(
     '',
     '- **`apps/`** — Frontend applications, backend servers, and user-facing services.',
     '- **`packages/`** — Shared modules, TypeScript configurations, and common utility libraries.',
+    ...(options.hasDocker
+      ? [
+          '  - **`docker/`** — Local container infrastructure configurations (docker-compose.yml).',
+        ]
+      : []),
     ...(options.hasDb
       ? [
           `  - **\`packages/db\`** — Shared database schemas, migrations, and Drizzle ORM client.`,
@@ -48,6 +77,7 @@ export async function setupReadme(
     'pnpm dev',
     '```',
     '',
+    ...dockerDocs,
     ...dbDocs,
     '### Linting',
     'Run static analysis across all workspaces:',

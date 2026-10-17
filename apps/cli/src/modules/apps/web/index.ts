@@ -37,6 +37,8 @@ export async function addWeb(projectPath: string) {
   } else if (framework === 'react') {
     await setupReact(projectPath);
   }
+
+  return framework as 'nextjs' | 'react' | 'skip';
 }
 
 export { setupNextjs } from './nextjs.js';

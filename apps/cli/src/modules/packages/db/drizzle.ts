@@ -4,28 +4,93 @@ import handleCancel from '../../../utils/isCancel.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { runCommand } from '../../../utils/exec.js';
+import type {
+  DbDialect,
+  NeonConnectionMode,
+  PostgresProvider,
+} from '../../../types/index.js';
 
-export async function promptDrizzle(): Promise<string> {
+export async function promptDrizzle(): Promise<{
+  dialect: DbDialect;
+  postgresProvider?: PostgresProvider;
+  neonMode?: NeonConnectionMode;
+}> {
   const dialectChoice = await select({
     message: 'Which database dialect would you like to use with Drizzle?',
     options: [
       {
         value: 'postgresql',
         label: 'PostgreSQL',
-        hint: 'node-postgres / Pool / Neon / Supabase / Docker',
+        hint: 'Docker / Neon / Supabase / node-postgres',
+      },
+      {
+        value: 'sqlite',
+        label: 'SQLite',
+        hint: 'libsql / Turso / local SQLite database file',
       },
     ],
     initialValue: 'postgresql',
   });
 
   handleCancel(dialectChoice);
-  return dialectChoice as string;
+  const dialect = dialectChoice as DbDialect;
+
+  if (dialect === 'postgresql') {
+    const providerChoice = await select({
+      message: 'Which PostgreSQL setup would you like to use?',
+      options: [
+        {
+          value: 'docker',
+          label: 'Docker (Local)',
+          hint: 'Pre-configured docker-compose.yml + node-postgres Pool',
+        },
+        {
+          value: 'neon',
+          label: 'Neon (Serverless)',
+          hint: 'Cloud serverless Postgres (@neondatabase/serverless)',
+        },
+      ],
+      initialValue: 'docker',
+    });
+
+    handleCancel(providerChoice);
+    const postgresProvider = providerChoice as PostgresProvider;
+
+    let neonMode: NeonConnectionMode | undefined;
+    if (postgresProvider === 'neon') {
+      const modeChoice = await select({
+        message: 'Which connection mode would you like to use with Neon?',
+        options: [
+          {
+            value: 'serverless',
+            label: 'Serverless HTTP',
+            hint: 'drizzle-orm/neon-http (ideal for serverless & edge)',
+          },
+          {
+            value: 'pool',
+            label: 'Connection Pool',
+            hint: 'drizzle-orm/neon-serverless (WebSocket Pool with transactions)',
+          },
+        ],
+        initialValue: 'serverless',
+      });
+
+      handleCancel(modeChoice);
+      neonMode = modeChoice as NeonConnectionMode;
+    }
+
+    return { dialect, postgresProvider, neonMode };
+  }
+
+  return { dialect };
 }
 
 export async function setupDrizzle(
   projectPath: string,
-  dialect: string = 'postgresql',
+  dialect: DbDialect = 'postgresql',
   linter: string = 'none',
+  postgresProvider: PostgresProvider = 'docker',
+  neonMode: NeonConnectionMode = 'serverless',
 ) {
   const dbDir = path.join(projectPath, 'packages', 'db');
   const srcDir = path.join(dbDir, 'src');
@@ -44,9 +109,16 @@ export async function setupDrizzle(
   const dbPackageRaw = await fsPromises.readFile(dbPackagePath, 'utf8');
   const dbPkg = JSON.parse(dbPackageRaw);
 
+  const providerLabel =
+    dialect === 'sqlite'
+      ? 'SQLite'
+      : postgresProvider === 'neon'
+        ? `PostgreSQL (Neon ${neonMode === 'pool' ? 'Pool' : 'Serverless'})`
+        : 'PostgreSQL (Docker)';
+
   dbPkg.name = '@repo/db';
   dbPkg.version = '1.0.0';
-  dbPkg.description = 'Shared Drizzle ORM database layer';
+  dbPkg.description = `Shared Drizzle ORM database layer (${providerLabel})`;
   dbPkg.private = true;
   dbPkg.type = 'module';
   dbPkg.main = './src/index.ts';
@@ -70,12 +142,15 @@ export async function setupDrizzle(
     'db:studio': 'drizzle-kit studio',
     'db:check': 'drizzle-kit check',
   };
-
   if (linter === 'biome') {
     dbPkg.scripts.lint = 'biome lint .';
   } else if (linter === 'oxlint') {
     dbPkg.scripts.lint = 'oxlint .';
   }
+
+  dbPkg.dependencies = {
+    '@repo/env': 'workspace:*',
+  };
 
   dbPkg.devDependencies = {
     '@config/typescript': 'workspace:*',
@@ -111,10 +186,26 @@ export async function setupDrizzle(
   );
 
   // 5. Install dependencies dynamically using pnpm add (using @rc for latest Drizzle)
-  await runCommand('pnpm add drizzle-orm@rc pg dotenv @types/pg', {
-    cwd: dbDir,
-    silent: false,
-  });
+  if (dialect === 'sqlite') {
+    await runCommand('pnpm add drizzle-orm@rc @libsql/client dotenv', {
+      cwd: dbDir,
+      silent: false,
+    });
+  } else if (postgresProvider === 'neon') {
+    await runCommand(
+      'pnpm add drizzle-orm@rc @neondatabase/serverless dotenv',
+      {
+        cwd: dbDir,
+        silent: false,
+      },
+    );
+  } else {
+    // Docker / standard PostgreSQL
+    await runCommand('pnpm add drizzle-orm@rc pg dotenv @types/pg', {
+      cwd: dbDir,
+      silent: false,
+    });
+  }
 
   await runCommand(
     'pnpm add -D drizzle-kit@rc @types/node tsx typescript@latest',
@@ -125,21 +216,29 @@ export async function setupDrizzle(
   );
 
   // 6. Generate drizzle.config.ts with package-relative .env loading
+  const envVar = dialect === 'sqlite' ? 'DB_FILE_NAME' : 'DATABASE_URL';
+
   const drizzleConfigContent = [
     "import { config } from 'dotenv';",
     "import { defineConfig } from 'drizzle-kit';",
     "import path from 'node:path';",
     "import { fileURLToPath } from 'node:url';",
     '',
-    'const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));',
-    "config({ path: path.join(packageRoot, '.env'), override: true });",
+    'const packageDir = path.dirname(fileURLToPath(import.meta.url));',
+    "const workspaceRoot = path.resolve(packageDir, '../..');",
+    "config({ path: path.join(workspaceRoot, '.env') });",
+    "config({ path: path.join(packageDir, '.env'), override: true });",
+    '',
+    `if (!process.env.${envVar}) {`,
+    `  throw new Error('${envVar} environment variable is required');`,
+    '}',
     '',
     'export default defineConfig({',
     "  out: './drizzle',",
     "  schema: './src/schema/index.ts',",
-    "  dialect: 'postgresql',",
+    `  dialect: '${dialect}',`,
     '  dbCredentials: {',
-    "    url: process.env.DATABASE_URL || 'postgresql://morax:morax@127.0.0.1:5432/morax_db',",
+    `    url: process.env.${envVar}!,`,
     '  },',
     '});',
     '',
@@ -151,22 +250,46 @@ export async function setupDrizzle(
     'utf8',
   );
 
-  // 7. Generate src/schema/index.ts with PostgreSQL starter schemas and types
-  const schemaContent = [
-    "import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';",
-    '',
-    "export const users = pgTable('users', {",
-    "  id: uuid('id').defaultRandom().primaryKey(),",
-    "  name: text('name').notNull(),",
-    "  email: text('email').notNull().unique(),",
-    "  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),",
-    "  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),",
-    '});',
-    '',
-    'export type User = typeof users.$inferSelect;',
-    'export type NewUser = typeof users.$inferInsert;',
-    '',
-  ].join('\n');
+  // 7. Generate src/schema/index.ts
+  let schemaContent: string;
+  if (dialect === 'sqlite') {
+    schemaContent = [
+      "import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core';",
+      '',
+      "export const users = sqliteTable('users', {",
+      "  id: int('id').primaryKey({ autoIncrement: true }),",
+      "  name: text('name').notNull(),",
+      "  email: text('email').notNull().unique(),",
+      "  createdAt: text('created_at')",
+      '    .$defaultFn(() => new Date().toISOString())',
+      '    .notNull(),',
+      "  updatedAt: text('updated_at')",
+      '    .$defaultFn(() => new Date().toISOString())',
+      '    .notNull(),',
+      '});',
+      '',
+      'export type User = typeof users.$inferSelect;',
+      'export type NewUser = typeof users.$inferInsert;',
+      '',
+    ].join('\n');
+  } else {
+    // Both Docker and Neon PostgreSQL use drizzle-orm/pg-core
+    schemaContent = [
+      "import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';",
+      '',
+      "export const users = pgTable('users', {",
+      "  id: uuid('id').defaultRandom().primaryKey(),",
+      "  name: text('name').notNull(),",
+      "  email: text('email').notNull().unique(),",
+      "  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),",
+      "  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),",
+      '});',
+      '',
+      'export type User = typeof users.$inferSelect;',
+      'export type NewUser = typeof users.$inferInsert;',
+      '',
+    ].join('\n');
+  }
 
   await fsPromises.writeFile(
     path.join(schemaDir, 'index.ts'),
@@ -174,30 +297,68 @@ export async function setupDrizzle(
     'utf8',
   );
 
-  // 8. Generate src/client.ts with explicit connection pool and schema
-  const clientContent = [
-    "import { config } from 'dotenv';",
-    "import path from 'node:path';",
-    "import { fileURLToPath } from 'node:url';",
-    "import { drizzle } from 'drizzle-orm/node-postgres';",
-    "import { Pool } from 'pg';",
-    "import * as schema from './schema/index.js';",
-    '',
-    "const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');",
-    "config({ path: path.join(packageRoot, '.env') });",
-    '',
-    'const connectionString =',
-    '  process.env.DATABASE_URL ||',
-    "  'postgresql://morax:morax@127.0.0.1:5432/morax_db';",
-    '',
-    'export const pool = new Pool({',
-    '  connectionString,',
-    '});',
-    '',
-    'export const db = drizzle({ client: pool, schema });',
-    'export type Database = typeof db;',
-    '',
-  ].join('\n');
+  // 8. Generate src/client.ts using type-safe @repo/env/server
+  let clientContent: string;
+  if (dialect === 'sqlite') {
+    clientContent = [
+      "import { drizzle } from 'drizzle-orm/libsql';",
+      "import { createClient } from '@libsql/client';",
+      "import { env } from '@repo/env/server';",
+      "import * as schema from './schema/index.js';",
+      '',
+      'export const client = createClient({ url: env.DB_FILE_NAME });',
+      'export const db = drizzle({ client, schema });',
+      'export type Database = typeof db;',
+      '',
+    ].join('\n');
+  } else if (postgresProvider === 'neon') {
+    if (neonMode === 'pool') {
+      // Neon WebSocket Pool
+      clientContent = [
+        "import { drizzle } from 'drizzle-orm/neon-serverless';",
+        "import { Pool } from '@neondatabase/serverless';",
+        "import { env } from '@repo/env/server';",
+        "import * as schema from './schema/index.js';",
+        '',
+        'export const pool = new Pool({',
+        '  connectionString: env.DATABASE_URL,',
+        '});',
+        '',
+        'export const db = drizzle({ client: pool, schema });',
+        'export type Database = typeof db;',
+        '',
+      ].join('\n');
+    } else {
+      // Neon Serverless HTTP
+      clientContent = [
+        "import { drizzle } from 'drizzle-orm/neon-http';",
+        "import { neon } from '@neondatabase/serverless';",
+        "import { env } from '@repo/env/server';",
+        "import * as schema from './schema/index.js';",
+        '',
+        'export const sql = neon(env.DATABASE_URL);',
+        'export const db = drizzle({ client: sql, schema });',
+        'export type Database = typeof db;',
+        '',
+      ].join('\n');
+    }
+  } else {
+    // Docker / standard PostgreSQL (node-postgres Pool)
+    clientContent = [
+      "import { drizzle } from 'drizzle-orm/node-postgres';",
+      "import { Pool } from 'pg';",
+      "import { env } from '@repo/env/server';",
+      "import * as schema from './schema/index.js';",
+      '',
+      'export const pool = new Pool({',
+      '  connectionString: env.DATABASE_URL,',
+      '});',
+      '',
+      'export const db = drizzle({ client: pool, schema });',
+      'export type Database = typeof db;',
+      '',
+    ].join('\n');
+  }
 
   await fsPromises.writeFile(
     path.join(srcDir, 'client.ts'),
@@ -206,8 +367,17 @@ export async function setupDrizzle(
   );
 
   // 9. Generate src/index.ts re-exporting client, schema, and drizzle-orm
+  let clientExport: string;
+  if (dialect === 'sqlite') {
+    clientExport = "export { db, client, type Database } from './client.js';";
+  } else if (postgresProvider === 'neon' && neonMode === 'serverless') {
+    clientExport = "export { db, sql, type Database } from './client.js';";
+  } else {
+    clientExport = "export { db, pool, type Database } from './client.js';";
+  }
+
   const indexContent = [
-    "export { db, pool, type Database } from './client.js';",
+    clientExport,
     "export * from './schema/index.js';",
     "export * from 'drizzle-orm';",
     '',
@@ -220,8 +390,23 @@ export async function setupDrizzle(
   );
 
   // 10. Generate src/seed/seed.ts and src/seed/index.ts
+  let seedTeardown: string;
+  let seedImports: string;
+
+  if (dialect === 'sqlite') {
+    seedImports = "import { client, db } from '../client.js';";
+    seedTeardown = 'client.close();';
+  } else if (postgresProvider === 'neon' && neonMode === 'serverless') {
+    seedImports = "import { db } from '../client.js';";
+    seedTeardown =
+      '// Serverless HTTP is stateless, no pool connection to close';
+  } else {
+    seedImports = "import { pool, db } from '../client.js';";
+    seedTeardown = 'await pool.end();';
+  }
+
   const seedScriptContent = [
-    "import { pool, db } from '../client.js';",
+    seedImports,
     "import { users } from '../schema/index.js';",
     '',
     '/**',
@@ -245,7 +430,7 @@ export async function setupDrizzle(
     "    console.error('❌ [Seed] Error occurred during database seeding:', error);",
     '    process.exitCode = 1;',
     '  } finally {',
-    '    await pool.end();',
+    `    ${seedTeardown}`,
     '  }',
     '}',
     '',
@@ -270,25 +455,7 @@ export async function setupDrizzle(
     'utf8',
   );
 
-  // 11. Generate .env and .env.example
-  const envContent = [
-    'POSTGRES_HOST=127.0.0.1',
-    'POSTGRES_USER=morax',
-    'POSTGRES_PASSWORD=morax',
-    'POSTGRES_DB=morax_db',
-    'POSTGRES_PORT=5432',
-    'DATABASE_URL=postgresql://morax:morax@127.0.0.1:5432/morax_db',
-    '',
-  ].join('\n');
-
-  await fsPromises.writeFile(
-    path.join(dbDir, '.env.example'),
-    envContent,
-    'utf8',
-  );
-  await fsPromises.writeFile(path.join(dbDir, '.env'), envContent, 'utf8');
-
-  // 12. Generate .gitignore
+  // 11. Generate .gitignore
   const gitignoreContent = [
     'node_modules/',
     'dist/',
@@ -304,14 +471,22 @@ export async function setupDrizzle(
     'utf8',
   );
 
-  // 13. Generate README.md
+  let dockerDocs = '';
+  if (dialect === 'postgresql' && postgresProvider === 'docker') {
+    dockerDocs = [
+      '- `pnpm docker:db` — Start local PostgreSQL Docker container (run from workspace root).',
+      '- `pnpm docker:down` — Stop Docker infrastructure (run from workspace root).',
+    ].join('\n');
+  }
+
   const readmeContent = [
     '# @repo/db',
     '',
-    'Shared database layer powered by **Drizzle ORM**.',
+    `Shared database layer powered by **Drizzle ORM (${providerLabel})**.`,
     '',
     '## Available Scripts',
     '',
+    dockerDocs,
     '- `pnpm db:generate` — Generate SQL migrations based on schema changes.',
     '- `pnpm db:push` — Push schema directly to the database without generating migrations.',
     '- `pnpm db:migrate` — Apply generated migrations to the database.',
@@ -319,7 +494,10 @@ export async function setupDrizzle(
     '- `pnpm db:studio` — Open Drizzle Studio visual browser for inspecting and editing data.',
     '- `pnpm db:check` — Check migration history and verify consistency.',
     '',
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   await fsPromises.writeFile(
     path.join(dbDir, 'README.md'),
     readmeContent,
@@ -329,8 +507,10 @@ export async function setupDrizzle(
 
 export async function runDrizzleSetup(
   projectPath: string,
-  dialect: string = 'postgresql',
+  dialect: DbDialect = 'postgresql',
   linter: string = 'none',
+  postgresProvider: PostgresProvider = 'docker',
+  neonMode: NeonConnectionMode = 'serverless',
 ) {
   const packagesDir = path.join(projectPath, 'packages');
   try {
@@ -339,12 +519,27 @@ export async function runDrizzleSetup(
     return;
   }
 
+  const label =
+    dialect === 'sqlite'
+      ? 'SQLite'
+      : postgresProvider === 'neon'
+        ? `PostgreSQL - Neon ${neonMode === 'pool' ? 'Pool' : 'Serverless'}`
+        : 'PostgreSQL - Docker';
+
   const s = spinner();
-  s.start('Setting up modular Drizzle ORM in packages/db...');
+  s.start(`Setting up modular Drizzle ORM (${label}) in packages/db...`);
   try {
-    await setupDrizzle(projectPath, dialect, linter);
+    await setupDrizzle(
+      projectPath,
+      dialect,
+      linter,
+      postgresProvider,
+      neonMode,
+    );
     s.stop(
-      pc.green('✔ Success: Modular Drizzle ORM configured in packages/db'),
+      pc.green(
+        `✔ Success: Modular Drizzle ORM (${label}) configured in packages/db`,
+      ),
     );
   } catch (error: any) {
     s.stop(pc.red('✖ Failed: Drizzle ORM setup failed'));
