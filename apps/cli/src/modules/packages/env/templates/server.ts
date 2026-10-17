@@ -1,14 +1,14 @@
 import type { EnvSetupOptions } from '../types.js';
 
 export function renderServerEnvTemplate(options: EnvSetupOptions): string {
-  const { hasDb, dbDialect, hasRedis, hasServer } = options;
+  const { hasRedis, hasServer, hasDocker } = options;
 
-  const schemaFields: string[] = [
+  const serverFields: string[] = [
     "  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),",
   ];
 
   if (hasServer) {
-    schemaFields.push(
+    serverFields.push(
       '  PORT: z.coerce.number({',
       "    required_error: 'PORT is required. Please declare PORT in root .env',",
       "    invalid_type_error: 'PORT must be a valid number',",
@@ -19,63 +19,32 @@ export function renderServerEnvTemplate(options: EnvSetupOptions): string {
     );
   }
 
-  if (hasDb) {
-    if (dbDialect === 'sqlite') {
-      schemaFields.push(
-        '  DB_FILE_NAME: z.string({',
-        "    required_error: 'DB_FILE_NAME is required. Please declare DB_FILE_NAME in root .env',",
-        "  }).min(1, 'DB_FILE_NAME cannot be empty'),",
-      );
-    } else {
-      schemaFields.push(
-        '  DATABASE_URL: z.string({',
-        "    required_error: 'DATABASE_URL is required. Please declare DATABASE_URL in root .env',",
-        "  }).min(1, 'DATABASE_URL cannot be empty'),",
-      );
-    }
-  }
-
   if (hasRedis) {
-    schemaFields.push(
+    serverFields.push(
       '  REDIS_PORT: z.coerce.number().default(6379),',
       '  REDIS_URL: z.string().optional(),',
     );
   }
 
+  const dockerImport = hasDocker
+    ? [
+        '// Run Docker infrastructure validation whenever server environment is loaded',
+        "import './docker.js';",
+        '',
+      ]
+    : [];
+
   return [
     "import { z } from 'zod';",
-    "import { config } from 'dotenv';",
-    "import path from 'node:path';",
-    "import { fileURLToPath } from 'node:url';",
-    '',
-    '// Resolve monorepo workspace directory',
-    'const srcDir = path.dirname(fileURLToPath(import.meta.url));',
-    "const workspaceRoot = path.resolve(srcDir, '../../..');",
-    '',
-    '// Load infrastructure credentials from root .env',
-    "config({ path: path.join(workspaceRoot, '.env') });",
-    '',
-    '// Strict schema without silent fallbacks',
+    "import { createEnv } from '../create-env.js';",
+    ...dockerImport,
+    '// Strict server schema',
     'export const serverSchema = z.object({',
-    schemaFields.join('\n'),
+    serverFields.join('\n'),
     '});',
     '',
-    'function formatZodErrors(errors: z.ZodError): string {',
-    '  const issues = errors.issues',
-    "    .map((issue) => `  ✖ [${issue.path.join('.')}]: ${issue.message}`)",
-    "    .join('\\n');",
-    '  return `\\n🚨 [Environment Validation Error] Invalid or missing server environment variables:\\n${issues}\\n`;',
-    '}',
-    '',
-    "const isSkip = process.env.SKIP_ENV_VALIDATION === 'true';",
-    'const parsed = serverSchema.safeParse(process.env);',
-    '',
-    'if (!parsed.success && !isSkip) {',
-    '  console.error(formatZodErrors(parsed.error));',
-    "  throw new Error('Server environment variable validation failed.');",
-    '}',
-    '',
-    'export const env = (isSkip ? ({} as z.infer<typeof serverSchema>) : parsed.data)!;',
+    "export const { env: server } = createEnv('Server', serverSchema);",
+    'export const env = server;',
     'export type ServerEnv = z.infer<typeof serverSchema>;',
     '',
   ].join('\n');

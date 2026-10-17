@@ -5,11 +5,13 @@ import pc from 'picocolors';
 import handleCancel from '../../../utils/isCancel.js';
 import type { EnvSetupOptions } from './types.js';
 import { getEnvPackageJson } from './package.js';
+import { renderCreateEnvTemplate } from './templates/create-env.js';
 import { renderServerEnvTemplate } from './templates/server.js';
 import { renderDbEnvTemplate } from './templates/db.js';
 import { renderDockerEnvTemplate } from './templates/docker.js';
 import { renderWebEnvTemplate } from './templates/web.js';
 import { renderIndexEnvTemplate } from './templates/index.js';
+import { renderCheckEnvTemplate } from './templates/check.js';
 
 export * from './types.js';
 
@@ -49,7 +51,7 @@ async function updateDbForEnv(projectPath: string, dialect?: string) {
   const clientFile = path.join(dbDir, 'src', 'client.ts');
   const drizzleConfigFile = path.join(dbDir, 'drizzle.config.ts');
 
-  // 1. Update src/client.ts to use @repo/env/db
+  // 1. Update src/client.ts to use env.db
   try {
     const content = await fsPromises.readFile(clientFile, 'utf8');
     let newContent = '';
@@ -58,10 +60,10 @@ async function updateDbForEnv(projectPath: string, dialect?: string) {
       newContent = [
         "import { drizzle } from 'drizzle-orm/libsql';",
         "import { createClient } from '@libsql/client';",
-        "import { env } from '@repo/env/db';",
+        "import { env } from '@repo/env';",
         "import * as schema from './schema/index.js';",
         '',
-        'export const client = createClient({ url: env.DB_FILE_NAME });',
+        'export const client = createClient({ url: env.db.DB_FILE_NAME });',
         'export const db = drizzle({ client, schema });',
         'export type Database = typeof db;',
         '',
@@ -70,11 +72,11 @@ async function updateDbForEnv(projectPath: string, dialect?: string) {
       newContent = [
         "import { drizzle } from 'drizzle-orm/neon-serverless';",
         "import { Pool } from '@neondatabase/serverless';",
-        "import { env } from '@repo/env/db';",
+        "import { env } from '@repo/env';",
         "import * as schema from './schema/index.js';",
         '',
         'export const pool = new Pool({',
-        '  connectionString: env.DATABASE_URL,',
+        '  connectionString: env.db.DATABASE_URL,',
         '});',
         '',
         'export const db = drizzle({ client: pool, schema } as any);',
@@ -85,10 +87,10 @@ async function updateDbForEnv(projectPath: string, dialect?: string) {
       newContent = [
         "import { drizzle } from 'drizzle-orm/neon-http';",
         "import { neon } from '@neondatabase/serverless';",
-        "import { env } from '@repo/env/db';",
+        "import { env } from '@repo/env';",
         "import * as schema from './schema/index.js';",
         '',
-        'export const sql = neon(env.DATABASE_URL);',
+        'export const sql = neon(env.db.DATABASE_URL);',
         'export const db = drizzle({ client: sql, schema });',
         'export type Database = typeof db;',
         '',
@@ -97,11 +99,11 @@ async function updateDbForEnv(projectPath: string, dialect?: string) {
       newContent = [
         "import { drizzle } from 'drizzle-orm/node-postgres';",
         "import { Pool } from 'pg';",
-        "import { env } from '@repo/env/db';",
+        "import { env } from '@repo/env';",
         "import * as schema from './schema/index.js';",
         '',
         'export const pool = new Pool({',
-        '  connectionString: env.DATABASE_URL,',
+        '  connectionString: env.db.DATABASE_URL,',
         '});',
         '',
         'export const db = drizzle({ client: pool, schema } as any);',
@@ -117,21 +119,21 @@ async function updateDbForEnv(projectPath: string, dialect?: string) {
     // If client.ts is not present, skip
   }
 
-  // 2. Update drizzle.config.ts to use @repo/env/db
+  // 2. Update drizzle.config.ts to use env.db
   try {
     const isSqlite = dialect === 'sqlite';
     const envVar = isSqlite ? 'DB_FILE_NAME' : 'DATABASE_URL';
     const dbDialect = dialect || 'postgresql';
     const newDrizzleConfig = [
       "import { defineConfig } from 'drizzle-kit';",
-      "import { env } from '@repo/env/db';",
+      "import { env } from '@repo/env';",
       '',
       'export default defineConfig({',
       "  out: './drizzle',",
       "  schema: './src/schema/index.ts',",
       `  dialect: '${dbDialect}',`,
       '  dbCredentials: {',
-      `    url: env.${envVar},`,
+      `    url: env.db.${envVar},`,
       '  },',
       '});',
       '',
@@ -147,24 +149,24 @@ async function updateServerEntryForEnv(projectPath: string) {
   try {
     let content = await fsPromises.readFile(indexFile, 'utf8');
 
-    if (!content.includes('@repo/env/server')) {
-      content = "import { env } from '@repo/env/server';\n" + content;
+    if (!content.includes('@repo/env')) {
+      content = "import { env } from '@repo/env';\n" + content;
     }
 
-    // Replace process.env.PORT throw check with env.PORT
+    // Replace process.env.PORT throw check with env.server.PORT
     content = content.replace(
       /if \(!process\.env\.PORT\) \{[\s\S]*?const port = Number\(process\.env\.PORT\);/,
-      'const port = env.PORT;',
+      'const port = env.server.PORT;',
     );
 
-    // Replace app.use(cors()) with origin from env
+    // Replace app.use(cors()) with origin from env.server
     content = content.replace(
       /app\.use\(cors\(\)\);/,
-      'app.use(cors({ origin: env.CORS_ORIGIN }));',
+      'app.use(cors({ origin: env.server.CORS_ORIGIN }));',
     );
     content = content.replace(
       /app\.use\('\*', cors\(\)\);/,
-      "app.use('*', cors({ origin: env.CORS_ORIGIN }));",
+      "app.use('*', cors({ origin: env.server.CORS_ORIGIN }));",
     );
 
     await fsPromises.writeFile(indexFile, content, 'utf8');
@@ -178,9 +180,10 @@ export async function setupEnvPackage(options: EnvSetupOptions) {
     options;
   const envDir = path.join(projectPath, 'packages', 'env');
   const srcDir = path.join(envDir, 'src');
+  const schemaDir = path.join(srcDir, 'schema');
 
   // 1. Create directories
-  await fsPromises.mkdir(srcDir, { recursive: true });
+  await fsPromises.mkdir(schemaDir, { recursive: true });
 
   // 2. Write package.json
   const pkgContent = getEnvPackageJson(options);
@@ -205,43 +208,55 @@ export async function setupEnvPackage(options: EnvSetupOptions) {
     'utf8',
   );
 
-  // 4. Generate src/server.ts if backend or db is present
-  if (hasServer || hasDb) {
-    const serverCode = renderServerEnvTemplate(options);
-    await fsPromises.writeFile(
-      path.join(srcDir, 'server.ts'),
-      serverCode,
-      'utf8',
-    );
-  }
+  // 4. Generate src/create-env.ts internal helper
+  const createEnvCode = renderCreateEnvTemplate();
+  await fsPromises.writeFile(
+    path.join(srcDir, 'create-env.ts'),
+    createEnvCode,
+    'utf8',
+  );
 
-  // 5. Generate src/db.ts if db is present
+  // 5. Generate src/schema/db.ts if db is present
   if (hasDb) {
     const dbCode = renderDbEnvTemplate(options);
-    await fsPromises.writeFile(path.join(srcDir, 'db.ts'), dbCode, 'utf8');
+    await fsPromises.writeFile(path.join(schemaDir, 'db.ts'), dbCode, 'utf8');
   }
 
-  // 6. Generate src/docker.ts if docker is configured
+  // 6. Generate src/schema/docker.ts if docker is configured
   if (hasDocker) {
     const dockerCode = renderDockerEnvTemplate(options);
     await fsPromises.writeFile(
-      path.join(srcDir, 'docker.ts'),
+      path.join(schemaDir, 'docker.ts'),
       dockerCode,
       'utf8',
     );
   }
 
-  // 7. Generate src/web.ts if frontend web is present
-  if (webFramework !== 'skip') {
-    const webCode = renderWebEnvTemplate(options);
-    await fsPromises.writeFile(path.join(srcDir, 'web.ts'), webCode, 'utf8');
+  // 7. Generate src/schema/server.ts if backend is present
+  if (hasServer || hasDb) {
+    const serverCode = renderServerEnvTemplate(options);
+    await fsPromises.writeFile(
+      path.join(schemaDir, 'server.ts'),
+      serverCode,
+      'utf8',
+    );
   }
 
-  // 8. Generate src/index.ts
+  // 8. Generate src/schema/web.ts if frontend web is present
+  if (webFramework !== 'skip') {
+    const webCode = renderWebEnvTemplate(options);
+    await fsPromises.writeFile(path.join(schemaDir, 'web.ts'), webCode, 'utf8');
+  }
+
+  // 9. Generate src/check.ts standalone CLI validation runner
+  const checkCode = renderCheckEnvTemplate(options);
+  await fsPromises.writeFile(path.join(srcDir, 'check.ts'), checkCode, 'utf8');
+
+  // 10. Generate src/index.ts
   const indexCode = renderIndexEnvTemplate(options);
   await fsPromises.writeFile(path.join(srcDir, 'index.ts'), indexCode, 'utf8');
 
-  // 9. Wire @repo/env into packages/db, apps/server, and apps/web
+  // 11. Wire @repo/env into packages/db, apps/server, and apps/web
   if (hasDb) {
     await addDependencyToPackage(
       path.join(projectPath, 'packages', 'db', 'package.json'),

@@ -1,32 +1,52 @@
 import type { EnvSetupOptions } from '../types.js';
 
 export function renderIndexEnvTemplate(options: EnvSetupOptions): string {
-  const { hasServer, hasDb, webFramework, hasDocker } = options;
-  const exports: string[] = [];
+  const { hasServer, hasDb, hasDocker, webFramework } = options;
+
+  const imports: string[] = [];
+  const envProperties: string[] = [];
+  const namedExports: string[] = [];
+  const typeExports: string[] = [];
 
   if (hasServer) {
-    exports.push(
-      "export { env as serverEnv, type ServerEnv, serverSchema } from './server.js';",
-    );
+    imports.push("import { server } from './schema/server.js';");
+    envProperties.push('  server,');
+    namedExports.push('server');
+    typeExports.push("export type { ServerEnv } from './schema/server.js';");
   }
 
   if (hasDb) {
-    exports.push(
-      "export { env as dbEnv, type DbEnv, dbSchema } from './db.js';",
-    );
+    imports.push("import { db } from './schema/db.js';");
+    envProperties.push('  db,');
+    namedExports.push('db');
+    typeExports.push("export type { DbEnv } from './schema/db.js';");
   }
 
   if (hasDocker) {
-    exports.push(
-      "export { env as dockerEnv, type DockerEnv, dockerSchema } from './docker.js';",
-    );
+    imports.push("import { docker } from './schema/docker.js';");
+    envProperties.push('  docker,');
+    namedExports.push('docker');
+    typeExports.push("export type { DockerEnv } from './schema/docker.js';");
   }
 
   if (webFramework !== 'skip') {
-    exports.push(
-      "export { env as clientEnv, type WebEnv, webSchema } from './web.js';",
-    );
+    imports.push("import { web } from './schema/web.js';");
+    envProperties.push('  web,');
+    namedExports.push('web');
+    typeExports.push("export type { WebEnv } from './schema/web.js';");
   }
 
-  return [...exports, ''].join('\n');
+  return [
+    ...imports,
+    '',
+    'export const env = {',
+    ...envProperties,
+    '};',
+    '',
+    namedExports.length > 0 ? `export { ${namedExports.join(', ')} };` : '',
+    ...typeExports,
+    '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

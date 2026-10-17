@@ -1,7 +1,7 @@
 import type { EnvSetupOptions } from '../types.js';
 
 export function renderDbEnvTemplate(options: EnvSetupOptions): string {
-  const { dbDialect } = options;
+  const { dbDialect, hasDocker, postgresProvider } = options;
 
   const schemaFields: string[] = [];
 
@@ -19,40 +19,29 @@ export function renderDbEnvTemplate(options: EnvSetupOptions): string {
     );
   }
 
+  const isPostgresDocker =
+    hasDocker &&
+    dbDialect === 'postgresql' &&
+    (!postgresProvider || postgresProvider === 'docker');
+
+  const dockerImport = isPostgresDocker
+    ? [
+        '// Run Docker infrastructure validation whenever database environment is loaded',
+        "import './docker.js';",
+        '',
+      ]
+    : [];
+
   return [
     "import { z } from 'zod';",
-    "import { config } from 'dotenv';",
-    "import path from 'node:path';",
-    "import { fileURLToPath } from 'node:url';",
-    '',
-    '// Resolve monorepo workspace directory',
-    'const srcDir = path.dirname(fileURLToPath(import.meta.url));',
-    "const workspaceRoot = path.resolve(srcDir, '../../..');",
-    '',
-    '// Load infrastructure credentials from root .env',
-    "config({ path: path.join(workspaceRoot, '.env') });",
-    '',
+    "import { createEnv } from '../create-env.js';",
+    ...dockerImport,
     '// Strict database environment schema',
-    'export const dbSchema = z.object({',
+    "export const { env: db, schema: dbSchema } = createEnv('Database', {",
     schemaFields.join('\n'),
     '});',
     '',
-    'function formatDbErrors(errors: z.ZodError): string {',
-    '  const issues = errors.issues',
-    "    .map((issue) => `  ✖ [${issue.path.join('.')}]: ${issue.message}`)",
-    "    .join('\\n');",
-    '  return `\\n🚨 [Database Environment Validation Error] Invalid or missing database environment variables:\\n${issues}\\n`;',
-    '}',
-    '',
-    "const isSkip = process.env.SKIP_ENV_VALIDATION === 'true';",
-    'const parsed = dbSchema.safeParse(process.env);',
-    '',
-    'if (!parsed.success && !isSkip) {',
-    '  console.error(formatDbErrors(parsed.error));',
-    "  throw new Error('Database environment variable validation failed.');",
-    '}',
-    '',
-    'export const env = (isSkip ? ({} as z.infer<typeof dbSchema>) : parsed.data)!;',
+    'export const env = db;',
     'export type DbEnv = z.infer<typeof dbSchema>;',
     '',
   ].join('\n');
