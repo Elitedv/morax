@@ -2,43 +2,53 @@ import type { EnvSetupOptions } from '../types.js';
 
 export function renderWebEnvTemplate(options: EnvSetupOptions): string {
   const isNext = options.webFramework === 'nextjs';
-  const varName = isNext ? 'NEXT_PUBLIC_API_URL' : 'VITE_API_URL';
+  const isReact = options.webFramework === 'react';
+  const hasAuth = Boolean(options.hasAuth);
 
-  const clientValue = isNext
-    ? `  ${varName}: process.env.${varName},`
-    : `  ${varName}: typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.${varName} : process.env.${varName},`;
+  const fields: string[] = [];
+
+  if (isNext) {
+    fields.push(
+      "  NEXT_PUBLIC_API_URL: z.string().url().default('http://localhost:3001'),",
+    );
+    if (hasAuth) {
+      fields.push(
+        "  NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url().default('http://localhost:3001'),",
+      );
+    }
+    fields.push('  WEB_PORT: z.coerce.number().default(3000),');
+  } else if (isReact) {
+    fields.push(
+      "  VITE_BACKEND_URL: z.string().url().default('http://localhost:3001'),",
+    );
+    if (hasAuth) {
+      fields.push(
+        "  NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url().default('http://localhost:3001'),",
+      );
+    }
+    fields.push('  WEB_PORT: z.coerce.number().default(5173),');
+  } else {
+    // webFramework === 'skip' but web env requested (e.g. auth is configured)
+    fields.push(
+      "  VITE_BACKEND_URL: z.string().url().default('http://localhost:3001'),",
+    );
+    fields.push(
+      "  NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url().default('http://localhost:3001'),",
+    );
+    fields.push('  WEB_PORT: z.coerce.number().default(3000),');
+  }
 
   return [
     "import { z } from 'zod';",
+    "import { createEnv } from '../create-env.js';",
     '',
-    '// Strict client schema without silent fallbacks',
+    '// Web environment schema (frontend web apps)',
     'export const webSchema = z.object({',
-    `  ${varName}: z.string({`,
-    `    required_error: '${varName} is required. Please declare ${varName} in root .env',`,
-    `  }).url('${varName} must be a valid URL'),`,
+    ...fields,
     '});',
     '',
-    'function formatWebErrors(errors: z.ZodError): string {',
-    '  const issues = errors.issues',
-    "    .map((issue) => `  ✖ [${issue.path.join('.')}]: ${issue.message}`)",
-    "    .join('\\n');",
-    '  return `\\n🚨 [Client Environment Error] Missing or invalid public client variables:\\n${issues}\\n`;',
-    '}',
-    '',
-    'const clientEnv = {',
-    clientValue,
-    '};',
-    '',
-    "const isSkip = typeof process !== 'undefined' && process.env?.SKIP_ENV_VALIDATION === 'true';",
-    'const parsed = webSchema.safeParse(clientEnv);',
-    '',
-    'if (!parsed.success && !isSkip) {',
-    '  console.error(formatWebErrors(parsed.error));',
-    "  throw new Error('Client environment variable validation failed.');",
-    '}',
-    '',
-    'export const env = (isSkip ? ({} as z.infer<typeof webSchema>) : parsed.data)!;',
-    'export const web = env;',
+    "export const { env: web, schema: webZodSchema } = createEnv('Web', webSchema);",
+    'export const env = web;',
     'export type WebEnv = z.infer<typeof webSchema>;',
     '',
   ].join('\n');

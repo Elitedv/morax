@@ -6,6 +6,7 @@ export interface RootEnvOptions {
   db?: DbSelection;
   redis?: boolean;
   hasServer?: boolean;
+  hasAuth?: boolean;
   webFramework?: WebFramework;
 }
 
@@ -21,7 +22,7 @@ export async function setupRootEnv(
     '',
   ];
 
-  const { db, redis, hasServer, webFramework } = options;
+  const { db, redis, hasServer, hasAuth, webFramework } = options;
 
   // 1. Backend Server Variables
   if (hasServer) {
@@ -55,6 +56,30 @@ export async function setupRootEnv(
   // 3. Redis Variables
   if (redis) {
     envLines.push('# Redis', 'REDIS_PORT=6379', '');
+  }
+
+  // 4. Better Auth Variables
+  if (hasAuth) {
+    envLines.push(
+      '# Better Auth',
+      'BETTER_AUTH_SECRET=secret-morax-auth-key-change-in-production',
+      'BETTER_AUTH_URL=http://localhost:3001',
+      'NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001',
+      '',
+      '# CORS & Trusted Origins (JSON array or comma-separated URLs)',
+      'CORS_ORIGIN=http://localhost:5173',
+      'CLIENT_URL=["http://localhost:5173", "http://localhost:3000"]',
+      '',
+      '# Social Providers',
+      'GOOGLE_CLIENT_ID=google-client-id',
+      'GOOGLE_CLIENT_SECRET=google-client-secret',
+      '# GITHUB_CLIENT_ID=',
+      '# GITHUB_CLIENT_SECRET=',
+      '',
+      '# Cookie domain for cross-subdomain cookies (Optional)',
+      '# COOKIE_DOMAIN=.localhost',
+      '',
+    );
   }
 
   // 4. Frontend Web Variables

@@ -188,17 +188,26 @@ export async function runWorkspaceScaffolder(
   const webFramework = await addWeb(projectPath);
 
   // =========================================================================
-  // STEP 5: Root Environment Configuration (.env, .env.example)
+  // STEP 5: Better Auth Package (@repo/auth) Prompt (Requires Drizzle ORM)
+  // =========================================================================
+  let shouldSetupAuth = false;
+  if (dbConfig.orm === 'drizzle') {
+    shouldSetupAuth = await promptAuth();
+  }
+
+  // =========================================================================
+  // STEP 6: Root Environment Configuration (.env, .env.example)
   // =========================================================================
   await setupRootEnv(projectPath, {
     db: dbConfig,
     redis: setupRedis,
     hasServer: serverFramework !== 'none',
+    hasAuth: shouldSetupAuth,
     webFramework,
   });
 
   // =========================================================================
-  // STEP 6: Type-Safe Environment Package (@repo/env) (Optional)
+  // STEP 7: Type-Safe Environment Package (@repo/env) (Optional)
   // =========================================================================
   const shouldSetupEnv = await promptEnv();
   if (shouldSetupEnv) {
@@ -210,28 +219,25 @@ export async function runWorkspaceScaffolder(
       hasDocker: isPostgresDocker || setupRedis,
       hasRedis: setupRedis,
       hasServer: serverFramework !== 'none',
+      hasAuth: shouldSetupAuth,
       webFramework,
     });
   }
 
   // =========================================================================
-  // STEP 6.5: Better Auth Package (@repo/auth) (Optional, requires Drizzle ORM)
+  // STEP 8: Better Auth Package (@repo/auth) Configuration
   // =========================================================================
-  let shouldSetupAuth = false;
-  if (dbConfig.orm === 'drizzle') {
-    shouldSetupAuth = await promptAuth();
-    if (shouldSetupAuth) {
-      await setupAuth({
-        projectPath,
-        dialect: dbConfig.dialect,
-        serverFramework,
-        serverRuntime,
-        webFramework,
-        hasServer: serverFramework !== 'none',
-        hasWeb: webFramework !== 'skip',
-        hasEnv: shouldSetupEnv,
-      });
-    }
+  if (shouldSetupAuth) {
+    await setupAuth({
+      projectPath,
+      dialect: dbConfig.dialect,
+      serverFramework,
+      serverRuntime,
+      webFramework,
+      hasServer: serverFramework !== 'none',
+      hasWeb: webFramework !== 'skip',
+      hasEnv: shouldSetupEnv,
+    });
   }
 
   // =========================================================================

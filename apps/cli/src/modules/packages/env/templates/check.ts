@@ -1,7 +1,8 @@
 import type { EnvSetupOptions } from '../types.js';
 
 export function renderCheckEnvTemplate(options: EnvSetupOptions): string {
-  const { hasServer, hasDb, hasDocker, webFramework } = options;
+  const { hasServer, hasDb, hasDocker, hasAuth, webFramework } = options;
+  const hasWebEnv = webFramework !== 'skip' || Boolean(hasAuth);
   const imports: string[] = [];
 
   if (hasDocker) {
@@ -13,7 +14,10 @@ export function renderCheckEnvTemplate(options: EnvSetupOptions): string {
   if (hasServer) {
     imports.push("import './schema/server.js';");
   }
-  if (webFramework !== 'skip') {
+  if (hasAuth) {
+    imports.push("import './schema/auth.js';");
+  }
+  if (hasWebEnv) {
     imports.push("import './schema/web.js';");
   }
 

@@ -18,7 +18,9 @@ function runInteractiveCommand(
   cwd: string,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const fullCommand =
+      args.length > 0 ? `${command} ${args.join(' ')}` : command;
+    const child = spawn(fullCommand, [], {
       cwd,
       stdio: 'inherit',
       shell: true,
@@ -29,11 +31,7 @@ function runInteractiveCommand(
       if (code === 0) {
         resolve();
       } else {
-        reject(
-          new Error(
-            `Command "${command} ${args.join(' ')}" exited with code ${code}`,
-          ),
-        );
+        reject(new Error(`Command "${fullCommand}" exited with code ${code}`));
       }
     });
 
@@ -55,13 +53,23 @@ export async function setupNextjs(projectPath: string, isMonorepo = true) {
     await fsPromises.rm(webDir, { recursive: true, force: true });
   } catch {}
 
-  // 2. Run npx create-next-app@latest interactively!
+  // 2. Run pnpm dlx create-next-app@latest interactively!
   console.log(pc.cyan('\nStarting interactive Next.js application setup...'));
   await runInteractiveCommand(
-    'npx',
-    ['create-next-app@latest', targetName],
+    'pnpm',
+    ['dlx', 'create-next-app@latest', targetName],
     appsDir,
   );
+
+  // Clean up any inner .git directory if created in monorepo apps/web
+  if (isMonorepo) {
+    try {
+      await fsPromises.rm(path.join(webDir, '.git'), {
+        recursive: true,
+        force: true,
+      });
+    } catch {}
+  }
 
   // 3. Rename package name to "web" in apps/web/package.json if monorepo
   if (isMonorepo) {

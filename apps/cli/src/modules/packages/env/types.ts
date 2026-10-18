@@ -8,5 +8,6 @@ export interface EnvSetupOptions {
   hasDocker?: boolean;
   hasRedis: boolean;
   hasServer: boolean;
+  hasAuth?: boolean;
   webFramework: WebFramework;
 }

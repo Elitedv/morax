@@ -50,7 +50,32 @@ export async function setupAuth(options: AuthSetupOptions) {
     const authSrcDir = path.join(authDir, 'src');
     await fsPromises.mkdir(authSrcDir, { recursive: true });
 
+    const authLibDir = path.join(authSrcDir, 'lib');
+    await fsPromises.mkdir(authLibDir, { recursive: true });
+
     // 1. packages/auth/package.json
+    const exportsMap: Record<string, any> = {
+      '.': {
+        types: './src/index.ts',
+        default: './src/index.ts',
+      },
+      './lib/auth': {
+        types: './src/lib/auth.ts',
+        default: './src/lib/auth.ts',
+      },
+      './lib/origins': {
+        types: './src/lib/origins.ts',
+        default: './src/lib/origins.ts',
+      },
+    };
+
+    if (hasWeb) {
+      exportsMap['./client'] = {
+        types: './src/client.ts',
+        default: './src/client.ts',
+      };
+    }
+
     const authPkg = {
       name: '@repo/auth',
       version: '1.0.0',
@@ -59,16 +84,7 @@ export async function setupAuth(options: AuthSetupOptions) {
       type: 'module',
       main: './src/index.ts',
       types: './src/index.ts',
-      exports: {
-        '.': {
-          types: './src/index.ts',
-          default: './src/index.ts',
-        },
-        './client': {
-          types: './src/client.ts',
-          default: './src/client.ts',
-        },
-      },
+      exports: exportsMap,
       scripts: {
         build: 'tsc',
       },
@@ -81,14 +97,18 @@ export async function setupAuth(options: AuthSetupOptions) {
         '@config/typescript': 'workspace:*',
         typescript: '^5.7.3',
       },
-      peerDependencies: {
-        react: '^19.0.0',
-      },
-      peerDependenciesMeta: {
-        react: {
-          optional: true,
-        },
-      },
+      ...(hasWeb
+        ? {
+            peerDependencies: {
+              react: '^19.0.0',
+            },
+            peerDependenciesMeta: {
+              react: {
+                optional: true,
+              },
+            },
+          }
+        : {}),
     };
 
     await fsPromises.writeFile(
@@ -113,55 +133,169 @@ export async function setupAuth(options: AuthSetupOptions) {
       'utf8',
     );
 
-    // 3. packages/auth/src/origins.ts
-    const originsContent = [
+    // 3. packages/auth/src/lib/origins.ts
+    const rawClientUrlExpr = hasEnv
+      ? 'env.auth.CLIENT_URL'
+      : 'process.env.CLIENT_URL || \'["http://localhost:5173", "http://localhost:3000"]\'';
+    const authUrlExpr = hasEnv
+      ? 'env.auth.BETTER_AUTH_URL'
+      : "process.env.BETTER_AUTH_URL || 'http://localhost:3001'";
+    const isProdExpr = hasEnv
+      ? "env.server.NODE_ENV === 'production'"
+      : "process.env.NODE_ENV === 'production'";
+
+    const originsLibLines: string[] = [];
+    if (hasEnv) {
+      originsLibLines.push("import { env } from '@repo/env';", '');
+    }
+    originsLibLines.push(
+      '/**',
+      ' * Parse client URLs from environment variable (supports JSON array or comma-separated list)',
+      ' */',
+      'function parseClientUrls(clientUrlInput: string): string[] {',
+      '  try {',
+      '    const trimmed = clientUrlInput.trim();',
+      "    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {",
+      '      const parsed = JSON.parse(trimmed);',
+      '      if (Array.isArray(parsed)) {',
+      '        return parsed.map((url) => String(url).trim()).filter(Boolean);',
+      '      }',
+      '    }',
+      '    return trimmed',
+      "      .split(',')",
+      '      .map((url) => url.trim())',
+      '      .filter(Boolean);',
+      '  } catch {',
+      '    return [clientUrlInput.trim()];',
+      '  }',
+      '}',
+      '',
+      `const clientUrls = parseClientUrls(${rawClientUrlExpr});`,
+      '',
       '/**',
       ' * Allowed trusted origins for CORS and Better Auth callbacks',
       ' */',
-      'export const trustedOrigins = [',
-      "  process.env.WEB_URL || 'http://localhost:3000',",
-      "  process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',",
-      "  'http://localhost:3000',",
-      "  'http://localhost:5173',",
-      '];',
+      `export const origins = Array.from(new Set([...clientUrls, ${authUrlExpr}]));`,
+      'export const trustedOrigins = origins;',
+      '',
+      `export const isProduction = ${isProdExpr};`,
+      '',
+    );
+
+    await fsPromises.writeFile(
+      path.join(authLibDir, 'origins.ts'),
+      originsLibLines.join('\n'),
+      'utf8',
+    );
+
+    // 4. packages/auth/src/lib/auth.ts
+    const isSqlite = dialect === 'sqlite';
+    const secretExpr = hasEnv
+      ? 'env.auth.BETTER_AUTH_SECRET'
+      : "process.env.BETTER_AUTH_SECRET || 'secret-morax-auth-key-change-in-production'";
+    const baseUrlExpr = hasEnv
+      ? 'env.auth.BETTER_AUTH_URL'
+      : "process.env.BETTER_AUTH_URL || 'http://localhost:3001'";
+    const cookieDomainExpr = hasEnv
+      ? 'env.auth.COOKIE_DOMAIN'
+      : 'process.env.COOKIE_DOMAIN';
+    const googleIdExpr = hasEnv
+      ? 'env.auth.GOOGLE_CLIENT_ID'
+      : "process.env.GOOGLE_CLIENT_ID || 'google-client-id'";
+    const googleSecretExpr = hasEnv
+      ? 'env.auth.GOOGLE_CLIENT_SECRET'
+      : "process.env.GOOGLE_CLIENT_SECRET || 'google-client-secret'";
+
+    const authLibLines: string[] = [
+      '/* eslint-disable @typescript-eslint/no-explicit-any */',
+      "import { betterAuth } from 'better-auth';",
+      "import { drizzleAdapter } from 'better-auth/adapters/drizzle';",
+      "import { db, user, session, account, verification } from '@repo/db';",
+    ];
+    if (hasEnv) {
+      authLibLines.push("import { env } from '@repo/env';");
+    }
+    authLibLines.push(
+      "import { isProduction, origins } from './origins.js';",
+      '',
+      'export const auth = betterAuth({',
+      `  secret: ${secretExpr},`,
+      `  baseURL: ${baseUrlExpr},`,
+      '  trustedOrigins: origins,',
+      '  advanced: {',
+      '    useSecureCookies: isProduction,',
+      '    crossSubDomainCookies: {',
+      `      enabled: isProduction && Boolean(${cookieDomainExpr}),`,
+      `      domain: ${cookieDomainExpr} || undefined,`,
+      '    },',
+      '  },',
+      '  session: {',
+      '    cookieCache: {',
+      '      enabled: true,',
+      '      maxAge: 60 * 60, // 1 hour',
+      '    },',
+      '  },',
+      '  database: drizzleAdapter(db, {',
+      `    provider: '${isSqlite ? 'sqlite' : 'pg'}',`,
+      '    schema: {',
+      '      user,',
+      '      session,',
+      '      account,',
+      '      verification,',
+      '    },',
+      '  }),',
+      '  emailAndPassword: {',
+      '    enabled: true,',
+      '  },',
+      '  socialProviders: {',
+      '    google: {',
+      `      clientId: ${googleIdExpr},`,
+      `      clientSecret: ${googleSecretExpr},`,
+      '    },',
+      '  },',
+      '  onError: (error: any) => {',
+      "    console.error('Better Auth Error:', error.message);",
+      '    return {',
+      "      status: 'error',",
+      '      message: error.message,',
+      '      redirect: origins[0],',
+      '    };',
+      '  },',
+      '});',
+      '',
+      'export type Auth = typeof auth;',
+      '',
+    );
+
+    await fsPromises.writeFile(
+      path.join(authLibDir, 'auth.ts'),
+      authLibLines.join('\n'),
+      'utf8',
+    );
+
+    // 5. packages/auth/src/origins.ts (re-export wrapper for backwards compatibility)
+    const originsReexport = [
+      '/**',
+      ' * Re-export origins and trustedOrigins from lib/origins.js for backwards compatibility',
+      ' */',
+      "export { origins, trustedOrigins, isProduction } from './lib/origins.js';",
       '',
     ].join('\n');
 
     await fsPromises.writeFile(
       path.join(authSrcDir, 'origins.ts'),
-      originsContent,
+      originsReexport,
       'utf8',
     );
 
-    // 4. packages/auth/src/index.ts
-    const isSqlite = dialect === 'sqlite';
+    // 6. packages/auth/src/index.ts
     const authIndexContent = [
-      "import { betterAuth } from 'better-auth';",
-      "import { drizzleAdapter } from 'better-auth/adapters/drizzle';",
-      "import { db } from '@repo/db';",
-      "import * as schema from '@repo/db/schema';",
-      "import { trustedOrigins } from './origins.js';",
-      '',
       '/**',
-      ' * Centralized Better Auth Server Configuration',
+      ' * Centralized Better Auth Server Exports',
+      ' * Configured in src/lib/auth.ts and src/lib/origins.ts',
       ' */',
-      'export const auth = betterAuth({',
-      '  database: drizzleAdapter(db, {',
-      `    provider: '${isSqlite ? 'sqlite' : 'pg'}',`,
-      '    schema: {',
-      '      ...schema,',
-      '    },',
-      '  }),',
-      "  secret: process.env.BETTER_AUTH_SECRET || 'secret-morax-auth-key-change-in-production',",
-      "  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3001',",
-      '  trustedOrigins,',
-      '  emailAndPassword: {',
-      '    enabled: true,',
-      '  },',
-      '});',
-      '',
-      'export type Auth = typeof auth;',
-      "export { trustedOrigins } from './origins.js';",
+      "export { auth, type Auth } from './lib/auth.js';",
+      "export { origins, trustedOrigins, isProduction } from './lib/origins.js';",
       '',
     ].join('\n');
 
@@ -171,29 +305,31 @@ export async function setupAuth(options: AuthSetupOptions) {
       'utf8',
     );
 
-    // 5. packages/auth/src/client.ts
-    const authClientContent = [
-      "import { createAuthClient } from 'better-auth/react';",
-      '',
-      '/**',
-      ' * Type-Safe Better Auth Client for Web Applications',
-      ' */',
-      'export const authClient = createAuthClient({',
-      '  baseURL:',
-      "    typeof window !== 'undefined'",
-      '      ? window.location.origin',
-      "      : process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3001',",
-      '});',
-      '',
-      'export const { signIn, signOut, signUp, useSession } = authClient;',
-      '',
-    ].join('\n');
+    // 7. packages/auth/src/client.ts (if web application is present)
+    if (hasWeb) {
+      const authClientContent = [
+        "import { createAuthClient } from 'better-auth/react';",
+        '',
+        '/**',
+        ' * Type-Safe Better Auth Client for Web Applications',
+        ' */',
+        'export const authClient = createAuthClient({',
+        '  baseURL:',
+        "    typeof window !== 'undefined'",
+        '      ? window.location.origin',
+        "      : process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3001',",
+        '});',
+        '',
+        'export const { signIn, signOut, signUp, useSession } = authClient;',
+        '',
+      ].join('\n');
 
-    await fsPromises.writeFile(
-      path.join(authSrcDir, 'client.ts'),
-      authClientContent,
-      'utf8',
-    );
+      await fsPromises.writeFile(
+        path.join(authSrcDir, 'client.ts'),
+        authClientContent,
+        'utf8',
+      );
+    }
 
     // 6. Generate packages/db/src/schema/auth.ts (Drizzle schema)
     const dbDir = path.join(projectPath, 'packages', 'db');
@@ -446,48 +582,6 @@ export async function setupAuth(options: AuthSetupOptions) {
         }
       } catch {}
     }
-
-    // 11. If @repo/env is configured, add Better Auth variables to schemas
-    if (hasEnv) {
-      const envPkgDir = path.join(projectPath, 'packages', 'env');
-      const serverEnvFile = path.join(envPkgDir, 'src', 'schema', 'server.ts');
-      const webEnvFile = path.join(envPkgDir, 'src', 'schema', 'web.ts');
-
-      try {
-        let serverEnvContent = await fsPromises.readFile(serverEnvFile, 'utf8');
-        if (!serverEnvContent.includes('BETTER_AUTH_SECRET')) {
-          const authFields = [
-            '  BETTER_AUTH_SECRET: z.string({',
-            "    required_error: 'BETTER_AUTH_SECRET is required. Please declare BETTER_AUTH_SECRET in root .env',",
-            '  }),',
-            "  BETTER_AUTH_URL: z.string().url().default('http://localhost:3001'),",
-          ].join('\n');
-          serverEnvContent = serverEnvContent.replace(
-            'export const serverSchema = z.object({',
-            `export const serverSchema = z.object({\n${authFields}`,
-          );
-          await fsPromises.writeFile(serverEnvFile, serverEnvContent, 'utf8');
-        }
-      } catch {}
-
-      try {
-        let webEnvContent = await fsPromises.readFile(webEnvFile, 'utf8');
-        if (!webEnvContent.includes('NEXT_PUBLIC_BETTER_AUTH_URL')) {
-          const authWebField =
-            "  NEXT_PUBLIC_BETTER_AUTH_URL: z.string().url().default('http://localhost:3001'),";
-          webEnvContent = webEnvContent.replace(
-            'export const webSchema = z.object({',
-            `export const webSchema = z.object({\n${authWebField}`,
-          );
-          webEnvContent = webEnvContent.replace(
-            'const clientEnv = {',
-            'const clientEnv = {\n  NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,',
-          );
-          await fsPromises.writeFile(webEnvFile, webEnvContent, 'utf8');
-        }
-      } catch {}
-    }
-
     s.stop(
       pc.green(
         '✔ Success: Better Auth configured in packages/auth & packages/db',

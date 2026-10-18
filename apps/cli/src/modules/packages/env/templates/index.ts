@@ -1,52 +1,38 @@
 import type { EnvSetupOptions } from '../types.js';
 
 export function renderIndexEnvTemplate(options: EnvSetupOptions): string {
-  const { hasServer, hasDb, hasDocker, webFramework } = options;
+  const { hasServer, hasDb, hasDocker, hasAuth, webFramework } = options;
+  const hasWebEnv = webFramework !== 'skip' || Boolean(hasAuth);
 
   const imports: string[] = [];
   const envProperties: string[] = [];
-  const namedExports: string[] = [];
-  const typeExports: string[] = [];
 
   if (hasServer) {
     imports.push("import { server } from './schema/server.js';");
     envProperties.push('  server,');
-    namedExports.push('server');
-    typeExports.push("export type { ServerEnv } from './schema/server.js';");
   }
 
   if (hasDb) {
     imports.push("import { db } from './schema/db.js';");
     envProperties.push('  db,');
-    namedExports.push('db');
-    typeExports.push("export type { DbEnv } from './schema/db.js';");
   }
 
   if (hasDocker) {
     imports.push("import { docker } from './schema/docker.js';");
     envProperties.push('  docker,');
-    namedExports.push('docker');
-    typeExports.push("export type { DockerEnv } from './schema/docker.js';");
   }
 
-  if (webFramework !== 'skip') {
-    imports.push("import { webSchema } from './schema/web.js';");
-    envProperties.push('  webSchema,');
-    namedExports.push('webSchema');
-    typeExports.push("export type { WebEnv } from './schema/web.js';");
+  if (hasAuth) {
+    imports.push("import { auth } from './schema/auth.js';");
+    envProperties.push('  auth,');
   }
 
-  return [
-    ...imports,
-    '',
-    'export const env = {',
-    ...envProperties,
-    '};',
-    '',
-    namedExports.length > 0 ? `export { ${namedExports.join(', ')} };` : '',
-    ...typeExports,
-    '',
-  ]
+  if (hasWebEnv) {
+    imports.push("import { web } from './schema/web.js';");
+    envProperties.push('  web,');
+  }
+
+  return [...imports, '', 'export const env = {', ...envProperties, '};', '']
     .filter(Boolean)
     .join('\n');
 }

@@ -1,34 +1,19 @@
 import type { EnvSetupOptions } from './types.js';
 
-export function getEnvPackageJson(options: EnvSetupOptions) {
-  const { hasServer, hasDb, hasDocker, webFramework } = options;
-
-  const exportsMap: Record<string, string> = {
-    '.': './src/index.ts',
-  };
-
-  if (hasServer || hasDb) {
-    exportsMap['./server'] = './src/schema/server.ts';
-  }
-
-  if (hasDb) {
-    exportsMap['./db'] = './src/schema/db.ts';
-  }
-
-  if (hasDocker) {
-    exportsMap['./docker'] = './src/schema/docker.ts';
-  }
-
-  if (webFramework !== 'skip') {
-    exportsMap['./web'] = './src/schema/web.ts';
-  }
-
+export function getEnvPackageJson(_options?: EnvSetupOptions) {
   return {
     name: '@repo/env',
     version: '1.0.0',
     private: true,
     type: 'module',
-    exports: exportsMap,
+    main: './src/index.ts',
+    types: './src/index.ts',
+    exports: {
+      '.': {
+        types: './src/index.ts',
+        default: './src/index.ts',
+      },
+    },
     scripts: {
       check: 'tsx src/check.ts',
     },

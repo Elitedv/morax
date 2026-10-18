@@ -10,6 +10,7 @@ import { renderServerEnvTemplate } from './templates/server.js';
 import { renderDbEnvTemplate } from './templates/db.js';
 import { renderDockerEnvTemplate } from './templates/docker.js';
 import { renderWebEnvTemplate } from './templates/web.js';
+import { renderAuthEnvTemplate } from './templates/auth.js';
 import { renderIndexEnvTemplate } from './templates/index.js';
 import { renderCheckEnvTemplate } from './templates/check.js';
 
@@ -176,8 +177,16 @@ async function updateServerEntryForEnv(projectPath: string) {
 }
 
 export async function setupEnvPackage(options: EnvSetupOptions) {
-  const { projectPath, hasDb, dbDialect, hasServer, hasDocker, webFramework } =
-    options;
+  const {
+    projectPath,
+    hasDb,
+    dbDialect,
+    hasServer,
+    hasDocker,
+    hasAuth,
+    webFramework,
+  } = options;
+  const hasWebEnv = webFramework !== 'skip' || Boolean(hasAuth);
   const envDir = path.join(projectPath, 'packages', 'env');
   const srcDir = path.join(envDir, 'src');
   const schemaDir = path.join(srcDir, 'schema');
@@ -242,21 +251,31 @@ export async function setupEnvPackage(options: EnvSetupOptions) {
     );
   }
 
-  // 8. Generate src/schema/web.ts if frontend web is present
-  if (webFramework !== 'skip') {
+  // 8. Generate src/schema/auth.ts if auth is present
+  if (hasAuth) {
+    const authCode = renderAuthEnvTemplate(options);
+    await fsPromises.writeFile(
+      path.join(schemaDir, 'auth.ts'),
+      authCode,
+      'utf8',
+    );
+  }
+
+  // 9. Generate src/schema/web.ts if frontend web is present OR if auth is selected
+  if (hasWebEnv) {
     const webCode = renderWebEnvTemplate(options);
     await fsPromises.writeFile(path.join(schemaDir, 'web.ts'), webCode, 'utf8');
   }
 
-  // 9. Generate src/check.ts standalone CLI validation runner
+  // 10. Generate src/check.ts standalone CLI validation runner
   const checkCode = renderCheckEnvTemplate(options);
   await fsPromises.writeFile(path.join(srcDir, 'check.ts'), checkCode, 'utf8');
 
-  // 10. Generate src/index.ts
+  // 11. Generate src/index.ts
   const indexCode = renderIndexEnvTemplate(options);
   await fsPromises.writeFile(path.join(srcDir, 'index.ts'), indexCode, 'utf8');
 
-  // 11. Wire @repo/env into packages/db, apps/server, and apps/web
+  // 12. Wire @repo/env into packages/db, apps/server, packages/auth, and apps/web
   if (hasDb) {
     await addDependencyToPackage(
       path.join(projectPath, 'packages', 'db', 'package.json'),
@@ -273,6 +292,14 @@ export async function setupEnvPackage(options: EnvSetupOptions) {
       'workspace:*',
     );
     await updateServerEntryForEnv(projectPath);
+  }
+
+  if (hasAuth) {
+    await addDependencyToPackage(
+      path.join(projectPath, 'packages', 'auth', 'package.json'),
+      '@repo/env',
+      'workspace:*',
+    );
   }
 
   if (webFramework !== 'skip') {
