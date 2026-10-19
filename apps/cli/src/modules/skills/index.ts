@@ -1,78 +1,108 @@
-import { multiselect, spinner } from '@clack/prompts';
+import { confirm } from '@clack/prompts';
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import handleCancel from '../../utils/isCancel.js';
-import { runCommand } from '../../utils/exec.js';
+import { runInteractiveCommand } from '../../utils/exec.js';
 
-export interface CuratedSkill {
-  id: string;
-  name: string;
-  repo: string;
-  description: string;
-  hint: string;
-}
-
-export const CURATED_SKILLS: CuratedSkill[] = [
-  {
-    id: 'modular-nextjs-dynamic',
-    name: 'Modular Next.js (Dynamic)',
-    repo: 'AshutoshDM1/skills',
-    description: 'Dynamic modular architecture for Next.js webapps',
-    hint: 'SaaS, dashboards & portals',
-  },
-  {
-    id: 'modular-nextjs-lean',
-    name: 'Modular Next.js (Lean)',
-    repo: 'AshutoshDM1/skills',
-    description: 'Lean modular architecture for Next.js landing pages',
-    hint: 'Landing pages & marketing sites',
-  },
-];
-
-export async function promptSkills(): Promise<string[]> {
-  const result = await multiselect({
-    message: 'Install curated AI Agent Skills (skills.sh)?',
-    options: CURATED_SKILLS.map((skill) => ({
-      value: skill.id,
-      label: skill.name,
-      hint: skill.hint,
-    })),
-    initialValues: [],
-    required: false,
+export async function promptSkills(): Promise<boolean> {
+  const result = await confirm({
+    message: 'Install AI Agent Skills (skills.sh)?',
+    initialValue: true,
   });
 
   handleCancel(result);
-  return result as string[];
+  return result as boolean;
 }
 
-export async function installSkills(
-  projectPath: string,
-  selectedSkillIds: string[],
-) {
-  if (selectedSkillIds.length === 0) {
-    return;
-  }
+/**
+ * Checks if rules exist in .agent/skills/rules or .agents/skills/rules
+ * and moves them to root /.agents/rules so AI agents can properly discover and configure them.
+ */
+export async function moveRulesToAgentRoot(projectPath: string) {
+  const targetRulesDir = path.join(projectPath, '.agents', 'rules');
+  const sourceCandidates = [
+    path.join(projectPath, '.agents', 'skills', 'rules'),
+    path.join(projectPath, '.agent', 'skills', 'rules'),
+    path.join(projectPath, '.agent', 'rules'),
+  ];
 
-  const s = spinner();
+  let moved = false;
 
-  for (const skillId of selectedSkillIds) {
-    const skill = CURATED_SKILLS.find((item) => item.id === skillId);
-    if (!skill) continue;
-
-    s.start(`Installing skill: ${pc.cyan(skill.name)} via skills.sh...`);
+  for (const sourceDir of sourceCandidates) {
     try {
-      const command = `pnpm dlx skills add ${skill.repo} --skill ${skill.id} -y`;
-      await runCommand(command, { cwd: projectPath, silent: true });
-      s.stop(pc.green(`✔ Installed ${skill.name} successfully`));
-    } catch (error: any) {
-      s.stop(
+      await fsPromises.access(sourceDir);
+    } catch {
+      continue;
+    }
+
+    await fsPromises.mkdir(targetRulesDir, { recursive: true });
+
+    try {
+      const entries = await fsPromises.readdir(sourceDir);
+      for (const entry of entries) {
+        const srcPath = path.join(sourceDir, entry);
+        const destPath = path.join(targetRulesDir, entry);
+        await fsPromises.cp(srcPath, destPath, {
+          recursive: true,
+          force: true,
+        });
+      }
+
+      await fsPromises.rm(sourceDir, { recursive: true, force: true });
+      moved = true;
+    } catch (err: any) {
+      console.log(
         pc.yellow(
-          `⚠ Warning: Failed to install ${skill.name} (${error.message || 'skills CLI error'})`,
+          `⚠ Warning: Could not move rules from ${sourceDir} (${err.message})\n`,
         ),
       );
     }
   }
+
+  // If .agent directory was left behind and is empty (or has empty skills folder), clean it up
+  const agentDir = path.join(projectPath, '.agent');
+  try {
+    const remaining = await fsPromises.readdir(agentDir);
+    if (remaining.length === 0) {
+      await fsPromises.rm(agentDir, { recursive: true, force: true });
+    } else if (remaining.length === 1 && remaining[0] === 'skills') {
+      const skillsRemaining = await fsPromises.readdir(
+        path.join(agentDir, 'skills'),
+      );
+      if (skillsRemaining.length === 0) {
+        await fsPromises.rm(agentDir, { recursive: true, force: true });
+      }
+    }
+  } catch {}
+
+  if (moved) {
+    console.log(
+      pc.green(`✔ Configured AI rules: Moved rules to .agents/rules\n`),
+    );
+  }
+}
+
+export async function installSkills(projectPath: string) {
+  console.log(pc.cyan('\nLaunching interactive skills CLI (skills.sh)...\n'));
+
+  try {
+    await runInteractiveCommand(
+      'pnpm',
+      ['dlx', 'skills', 'add', 'AshutoshDM1/skills'],
+      projectPath,
+    );
+    console.log(pc.green('\n✔ Skills installation completed\n'));
+  } catch (error: any) {
+    console.log(
+      pc.yellow(
+        `\n⚠ Note: Skills installation ended (${error.message || 'CLI exited'})\n`,
+      ),
+    );
+  }
+
+  // Move rules from .agent/skills/rules to root /.agent/rules for AI configuration
+  await moveRulesToAgentRoot(projectPath);
 
   // 1. Remove unwanted .claude folder created by skills.sh CLI
   const claudeDir = path.join(projectPath, '.claude');
@@ -100,8 +130,8 @@ export async function installSkills(
 }
 
 export async function promptAndInstallSkills(projectPath: string) {
-  const selectedSkills = await promptSkills();
-  if (selectedSkills.length > 0) {
-    await installSkills(projectPath, selectedSkills);
+  const shouldInstall = await promptSkills();
+  if (shouldInstall) {
+    await installSkills(projectPath);
   }
 }

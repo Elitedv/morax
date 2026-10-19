@@ -4,8 +4,8 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import FontChanger, { FontInitializer } from '@/Shared/FontChanger/FontChanger';
 import { Lexend } from 'next/font/google';
-import SmoothScroll from '@/Shared/SmoothScroll/SmoothScroll';
 import { Analytics } from '@vercel/analytics/next';
+import QueryProvider from '@/Shared/Providers/QueryProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend' });
@@ -124,7 +124,7 @@ export default function RootLayout({
             <FontInitializer />
           </>
         )}
-        {children}
+        <QueryProvider>{children}</QueryProvider>
         <Analytics />
         {process.env.NODE_ENV === 'development' && (
           <>

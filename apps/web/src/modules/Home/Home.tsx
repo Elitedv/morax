@@ -10,6 +10,7 @@ import Footer from '@/Shared/Footer/Footer';
 
 const Home = () => {
   const navItems = [
+    { label: 'Docs', href: '/docs/installation' },
     { label: 'Github', href: 'https://github.com/Elitedv/morax' },
     { label: 'NPM', href: 'https://www.npmjs.com/package/create-morax' },
   ];

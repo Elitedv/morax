@@ -273,7 +273,7 @@ export async function runWorkspaceScaffolder(
   });
 
   // =========================================================================
-  // STEP 8: Curated AI Agent Skills (skills.sh) (Optional)
+  // STEP 8: AI Agent Skills (skills.sh) (Optional)
   // =========================================================================
   await promptAndInstallSkills(projectPath);
 

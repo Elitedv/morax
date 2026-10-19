@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import pc from 'picocolors';
 
@@ -49,4 +49,36 @@ export async function runCommand(
     }
     throw error;
   }
+}
+
+/**
+ * Helper to run interactive commands with inherited stdio
+ */
+export function runInteractiveCommand(
+  command: string,
+  args: string[],
+  cwd: string,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const fullCommand =
+      args.length > 0 ? `${command} ${args.join(' ')}` : command;
+    const child = spawn(fullCommand, [], {
+      cwd,
+      stdio: 'inherit',
+      shell: true,
+      env: { ...process.env, NODE_NO_WARNINGS: '1' },
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Command "${fullCommand}" exited with code ${code}`));
+      }
+    });
+
+    child.on('error', (err) => {
+      reject(err);
+    });
+  });
 }

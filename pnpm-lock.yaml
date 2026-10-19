@@ -50,15 +50,30 @@ importers:
 
   apps/web:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.104.4
+        version: 5.104.4(@types/react@19.2.15)(react@19.2.4)
+      '@types/prismjs':
+        specifier: ^1.26.6
+        version: 1.26.6
       '@vercel/analytics':
         specifier: ^1.6.1
         version: 1.6.1(next@16.2.6(@babel/core@7.29.7)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
+      axios:
+        specifier: ^1.20.0
+        version: 1.20.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      cn:
+        specifier: ^0.5.0
+        version: 0.5.0
+      date-fns:
+        specifier: ^4.4.0
+        version: 4.4.0
       lenis:
         specifier: ^1.3.23
         version: 1.3.23(react@19.2.4)
@@ -71,12 +86,18 @@ importers:
       next:
         specifier: 16.2.6
         version: 16.2.6(@babel/core@7.29.7)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      prismjs:
+        specifier: ^1.30.0
+        version: 1.30.0
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: 19.2.4
         version: 19.2.4
+      react-day-picker:
+        specifier: ^10.0.2
+        version: 10.0.2(@types/react@19.2.15)(react@19.2.4)
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
@@ -352,6 +373,12 @@ packages:
         integrity: sha512-S0My7XPGIgpRWMDG8uRqalbgT+a6FmCUdOW+HaIOVVpUPHOb7RrpvjTjiODadKp06fsrVDJZlIzc6yCTp4AnxA==,
       }
     engines: { node: '>= 20.12.0' }
+
+  '@date-fns/tz@1.5.0':
+    resolution:
+      {
+        integrity: sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg==,
+      }
 
   '@dotenvx/dotenvx@1.69.1':
     resolution:
@@ -2698,6 +2725,24 @@ packages:
         integrity: sha512-Jm05Tjx+9yCLGv5qw1c+84Psds8MnyrEQYCB+FFk2lgGiUjlRqdxke4mVTuYrj2xnVZqKim2Apr5ySuQRYAw/w==,
       }
 
+  '@tanstack/query-core@5.104.4':
+    resolution:
+      {
+        integrity: sha512-nU4Yrb8Sjn0DeVb7PKG9uiepNavys3yoxy1FX0hViY4/P6Ng/mBje2SMl7i9812rtyHKtHyqiaC/td6GkI8StA==,
+      }
+
+  '@tanstack/react-query@5.104.4':
+    resolution:
+      {
+        integrity: sha512-YD5QkvUNy8Ey3LbOy2vwL97JjoYycwDv++cWAibTe+9BLYvl3c09XpYp5dZ2VcxcguwoDhGF+utYJYb79RB36w==,
+      }
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   '@ts-morph/common@0.27.0':
     resolution:
       {
@@ -2744,6 +2789,12 @@ packages:
     resolution:
       {
         integrity: sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA==,
+      }
+
+  '@types/prismjs@1.26.6':
+    resolution:
+      {
+        integrity: sha512-vqlvI7qlMvcCBbVe0AKAb4f97//Hy0EBTaiW8AalRnG/xAN5zOiWWyrNqNXeq8+KAuvRewjCVY1+IPxk4RdNYw==,
       }
 
   '@types/react-dom@19.2.3':
@@ -3101,6 +3152,13 @@ packages:
     engines: { node: '>=0.4.0' }
     hasBin: true
 
+  agent-base@6.0.2:
+    resolution:
+      {
+        integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==,
+      }
+    engines: { node: '>= 6.0.0' }
+
   agent-base@7.1.4:
     resolution:
       {
@@ -3274,6 +3332,12 @@ packages:
       }
     engines: { node: '>= 0.4' }
 
+  asynckit@0.4.0:
+    resolution:
+      {
+        integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==,
+      }
+
   available-typed-arrays@1.0.7:
     resolution:
       {
@@ -3287,6 +3351,12 @@ packages:
         integrity: sha512-KunSNx+TVpkAw/6ULfhnx+HWRecjqZGTOyquAoWHYLRSdK1tB5Ihce1ZW+UY3fj33bYAFWPu7W/GRSmmrCGuxA==,
       }
     engines: { node: '>=4' }
+
+  axios@1.20.0:
+    resolution:
+      {
+        integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==,
+      }
 
   axobject-query@4.1.0:
     resolution:
@@ -3517,6 +3587,14 @@ packages:
       }
     engines: { node: '>=6' }
 
+  cn@0.5.0:
+    resolution:
+      {
+        integrity: sha512-JGEixZEpfFXm1P5uXwvEobOFLlHwIWi5v4tjd1ZwfiYmcEilkuD2l+054rvJcYCR1B+uVThHeUbgmNz1FwuxuA==,
+      }
+    engines: { node: '>=22' }
+    hasBin: true
+
   code-block-writer@13.0.3:
     resolution:
       {
@@ -3535,6 +3613,13 @@ packages:
       {
         integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==,
       }
+
+  combined-stream@1.0.8:
+    resolution:
+      {
+        integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==,
+      }
+    engines: { node: '>= 0.8' }
 
   commander@11.1.0:
     resolution:
@@ -3698,6 +3783,12 @@ packages:
       }
     engines: { node: '>= 0.4' }
 
+  date-fns@4.4.0:
+    resolution:
+      {
+        integrity: sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w==,
+      }
+
   debug@3.2.7:
     resolution:
       {
@@ -3779,6 +3870,13 @@ packages:
         integrity: sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==,
       }
     engines: { node: '>= 0.4' }
+
+  delayed-stream@1.0.0:
+    resolution:
+      {
+        integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==,
+      }
+    engines: { node: '>=0.4.0' }
 
   depd@2.0.0:
     resolution:
@@ -4360,12 +4458,31 @@ packages:
         integrity: sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==,
       }
 
+  follow-redirects@1.16.1:
+    resolution:
+      {
+        integrity: sha512-FNvFGzoMLWmE6Yj9spb/zjd7yiNCHiAW9/Tg9CXrQ8wuu32HtlJOwWO11OJafl5FfY3DxTdQ0vj42zU1kvv5jg==,
+      }
+    engines: { node: '>=4.0' }
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+
   for-each@0.3.5:
     resolution:
       {
         integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==,
       }
     engines: { node: '>= 0.4' }
+
+  form-data@4.0.6:
+    resolution:
+      {
+        integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==,
+      }
+    engines: { node: '>= 6' }
 
   formdata-polyfill@4.0.10:
     resolution:
@@ -4638,6 +4755,13 @@ packages:
       }
     engines: { node: '>= 0.4' }
 
+  hasown@2.0.4:
+    resolution:
+      {
+        integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==,
+      }
+    engines: { node: '>= 0.4' }
+
   headers-polyfill@5.0.1:
     resolution:
       {
@@ -4669,6 +4793,13 @@ packages:
         integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==,
       }
     engines: { node: '>= 0.8' }
+
+  https-proxy-agent@5.0.1:
+    resolution:
+      {
+        integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==,
+      }
+    engines: { node: '>= 6' }
 
   https-proxy-agent@7.0.6:
     resolution:
@@ -5462,10 +5593,24 @@ packages:
       }
     engines: { node: '>=8.6' }
 
+  mime-db@1.52.0:
+    resolution:
+      {
+        integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==,
+      }
+    engines: { node: '>= 0.6' }
+
   mime-db@1.54.0:
     resolution:
       {
         integrity: sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==,
+      }
+    engines: { node: '>= 0.6' }
+
+  mime-types@2.1.35:
+    resolution:
+      {
+        integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==,
       }
     engines: { node: '>= 0.6' }
 
@@ -6014,6 +6159,13 @@ packages:
       }
     engines: { node: '>=18' }
 
+  prismjs@1.30.0:
+    resolution:
+      {
+        integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==,
+      }
+    engines: { node: '>=6' }
+
   prompts@2.4.2:
     resolution:
       {
@@ -6033,6 +6185,13 @@ packages:
         integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==,
       }
     engines: { node: '>= 0.10' }
+
+  proxy-from-env@2.1.0:
+    resolution:
+      {
+        integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==,
+      }
+    engines: { node: '>=10' }
 
   punycode@2.3.1:
     resolution:
@@ -6083,6 +6242,19 @@ packages:
         integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==,
       }
     engines: { node: '>= 0.10' }
+
+  react-day-picker@10.0.2:
+    resolution:
+      {
+        integrity: sha512-QetiKtZWE9Uaw/pM/SYNv6WPYOTRnSJ2puL0GgwkmUFMIwiY0dtjH1W4B7DOVXVNQM0ZOClGpH/heOfBSzWeiA==,
+      }
+    engines: { node: '>=18' }
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   react-dom@19.2.4:
     resolution:
@@ -7399,6 +7571,8 @@ snapshots:
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
+
+  '@date-fns/tz@1.5.0': {}
 
   '@dotenvx/dotenvx@1.69.1':
     dependencies:
@@ -8818,6 +8992,15 @@ snapshots:
       postcss: 8.5.15
       tailwindcss: 4.3.0
 
+  '@tanstack/query-core@5.104.4': {}
+
+  '@tanstack/react-query@5.104.4(@types/react@19.2.15)(react@19.2.4)':
+    dependencies:
+      '@tanstack/query-core': 5.104.4
+      react: 19.2.4
+    optionalDependencies:
+      '@types/react': 19.2.15
+
   '@ts-morph/common@0.27.0':
     dependencies:
       fast-glob: 3.3.3
@@ -8846,6 +9029,8 @@ snapshots:
   '@types/node@24.12.4':
     dependencies:
       undici-types: 7.16.0
+
+  '@types/prismjs@1.26.6': {}
 
   '@types/react-dom@19.2.3(@types/react@19.2.15)':
     dependencies:
@@ -9042,6 +9227,12 @@ snapshots:
 
   acorn@8.16.0: {}
 
+  agent-base@6.0.2:
+    dependencies:
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+
   agent-base@7.1.4: {}
 
   ajv-formats@3.0.1(ajv@8.20.0):
@@ -9163,11 +9354,23 @@ snapshots:
 
   async-function@1.0.0: {}
 
+  asynckit@0.4.0: {}
+
   available-typed-arrays@1.0.7:
     dependencies:
       possible-typed-array-names: 1.1.0
 
   axe-core@4.11.4: {}
+
+  axios@1.20.0:
+    dependencies:
+      follow-redirects: 1.16.1
+      form-data: 4.0.6
+      https-proxy-agent: 5.0.1
+      proxy-from-env: 2.1.0
+    transitivePeerDependencies:
+      - debug
+      - supports-color
 
   axobject-query@4.1.0: {}
 
@@ -9300,6 +9503,8 @@ snapshots:
 
   clsx@2.1.1: {}
 
+  cn@0.5.0: {}
+
   code-block-writer@13.0.3: {}
 
   color-convert@2.0.1:
@@ -9307,6 +9512,10 @@ snapshots:
       color-name: 1.1.4
 
   color-name@1.1.4: {}
+
+  combined-stream@1.0.8:
+    dependencies:
+      delayed-stream: 1.0.0
 
   commander@11.1.0: {}
 
@@ -9380,6 +9589,8 @@ snapshots:
       es-errors: 1.3.0
       is-data-view: 1.0.2
 
+  date-fns@4.4.0: {}
+
   debug@3.2.7:
     dependencies:
       ms: 2.1.3
@@ -9414,6 +9625,8 @@ snapshots:
       define-data-property: 1.1.4
       has-property-descriptors: 1.0.2
       object-keys: 1.1.1
+
+  delayed-stream@1.0.0: {}
 
   depd@2.0.0: {}
 
@@ -9559,7 +9772,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.3
+      hasown: 2.0.4
 
   es-shim-unscopables@1.1.0:
     dependencies:
@@ -10003,9 +10216,19 @@ snapshots:
 
   flatted@3.4.2: {}
 
+  follow-redirects@1.16.1: {}
+
   for-each@0.3.5:
     dependencies:
       is-callable: 1.2.7
+
+  form-data@4.0.6:
+    dependencies:
+      asynckit: 0.4.0
+      combined-stream: 1.0.8
+      es-set-tostringtag: 2.1.0
+      hasown: 2.0.4
+      mime-types: 2.1.35
 
   formdata-polyfill@4.0.10:
     dependencies:
@@ -10145,6 +10368,10 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  hasown@2.0.4:
+    dependencies:
+      function-bind: 1.1.2
+
   headers-polyfill@5.0.1:
     dependencies:
       '@types/set-cookie-parser': 2.4.10
@@ -10165,6 +10392,13 @@ snapshots:
       setprototypeof: 1.2.0
       statuses: 2.0.2
       toidentifier: 1.0.1
+
+  https-proxy-agent@5.0.1:
+    dependencies:
+      agent-base: 6.0.2
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
 
   https-proxy-agent@7.0.6:
     dependencies:
@@ -10539,7 +10773,13 @@ snapshots:
       braces: 3.0.3
       picomatch: 2.3.2
 
+  mime-db@1.52.0: {}
+
   mime-db@1.54.0: {}
+
+  mime-types@2.1.35:
+    dependencies:
+      mime-db: 1.52.0
 
   mime-types@3.0.2:
     dependencies:
@@ -10875,6 +11115,8 @@ snapshots:
     dependencies:
       parse-ms: 4.0.0
 
+  prismjs@1.30.0: {}
+
   prompts@2.4.2:
     dependencies:
       kleur: 3.0.3
@@ -10890,6 +11132,8 @@ snapshots:
     dependencies:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
+
+  proxy-from-env@2.1.0: {}
 
   punycode@2.3.1: {}
 
@@ -10970,6 +11214,14 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.2
       unpipe: 1.0.0
+
+  react-day-picker@10.0.2(@types/react@19.2.15)(react@19.2.4):
+    dependencies:
+      '@date-fns/tz': 1.5.0
+      date-fns: 4.4.0
+      react: 19.2.4
+    optionalDependencies:
+      '@types/react': 19.2.15
 
   react-dom@19.2.4(react@19.2.4):
     dependencies:

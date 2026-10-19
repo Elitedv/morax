@@ -53,21 +53,10 @@ interface NavbarProps {
   navItems: NavItem[];
 }
 
-async function getLatestNpmVersion(): Promise<string | null> {
-  try {
-    const res = await fetch('https://registry.npmjs.org/create-morax/latest', {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.version ? `v${data.version}` : null;
-  } catch {
-    return null;
-  }
-}
+import { getNpmLatestVersion } from '@/service/api';
 
 const Navbar = async ({ navItems }: NavbarProps) => {
-  const latestVersion = await getLatestNpmVersion();
+  const latestVersion = await getNpmLatestVersion('create-morax');
 
   return (
     <NavbarWraper>
