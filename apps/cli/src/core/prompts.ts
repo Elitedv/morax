@@ -6,6 +6,7 @@ import type {
   GitHookType,
   LinterType,
   ServerRuntime,
+  WebFramework,
   WorkspaceAnswers,
 } from '../types/index.js';
 
@@ -53,34 +54,65 @@ export async function askServerRuntime(): Promise<ServerRuntime> {
   return runtime as ServerRuntime;
 }
 
-export async function askLinter(): Promise<LinterType> {
+export async function askLinter(
+  webFramework?: WebFramework,
+): Promise<LinterType> {
+  const isNext = webFramework === 'nextjs';
+  const isReact = webFramework === 'react';
+
+  const options = isNext
+    ? [
+        {
+          value: 'biome',
+          label: 'Biome (Recommended for Next.js)',
+          hint: 'Fast Rust-based all-in-one toolchain',
+        },
+        {
+          value: 'oxlint',
+          label: 'Oxlint',
+          hint: 'Fast Rust linter',
+        },
+        {
+          value: 'none',
+          label: 'None',
+          hint: 'Skip',
+        },
+      ]
+    : [
+        {
+          value: 'oxlint',
+          label: isReact ? 'Oxlint (Recommended for React + Vite)' : 'Oxlint',
+          hint: 'Fast Rust linter',
+        },
+        {
+          value: 'biome',
+          label: 'Biome',
+          hint: 'Rust toolchain',
+        },
+        {
+          value: 'none',
+          label: 'None',
+          hint: 'Skip',
+        },
+      ];
+
+  const initialValue: LinterType = isNext ? 'biome' : 'oxlint';
+
   const linter = await select({
     message: 'Which linter would you like to use?',
-    options: [
-      {
-        value: 'oxlint',
-        label: 'Oxlint',
-        hint: 'Fast Rust linter',
-      },
-      {
-        value: 'biome',
-        label: 'Biome',
-        hint: 'Rust toolchain',
-      },
-      {
-        value: 'none',
-        label: 'None',
-        hint: 'Skip',
-      },
-    ],
-    initialValue: 'oxlint',
+    options,
+    initialValue,
   });
 
   handleCancel(linter);
   return linter as LinterType;
 }
 
-export async function askFormatter(): Promise<FormatterType> {
+export async function askFormatter(
+  linter?: LinterType,
+): Promise<FormatterType> {
+  const initialValue: FormatterType = linter === 'biome' ? 'biome' : 'prettier';
+
   const formatter = await select({
     message: 'Which code formatter would you like to use?',
     options: [
@@ -91,7 +123,8 @@ export async function askFormatter(): Promise<FormatterType> {
       },
       {
         value: 'biome',
-        label: 'Biome',
+        label:
+          linter === 'biome' ? 'Biome (Included with Biome linter)' : 'Biome',
         hint: 'Fast formatter',
       },
       {
@@ -100,7 +133,7 @@ export async function askFormatter(): Promise<FormatterType> {
         hint: 'Skip',
       },
     ],
-    initialValue: 'prettier',
+    initialValue,
   });
 
   handleCancel(formatter);

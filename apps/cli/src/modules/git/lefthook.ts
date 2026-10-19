@@ -75,8 +75,8 @@ export async function setupLefthook(
 export async function runLefthookSetup(
   projectPath: string,
   gitInitialized: boolean,
-  hasFormatter: boolean,
-  hasLinter: boolean,
+  hasFormatter: boolean = true,
+  hasLinter: boolean = true,
 ) {
   if (!gitInitialized) return;
 

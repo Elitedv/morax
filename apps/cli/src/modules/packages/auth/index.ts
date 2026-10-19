@@ -32,15 +32,7 @@ export async function promptAuth(): Promise<boolean> {
 }
 
 export async function setupAuth(options: AuthSetupOptions) {
-  const {
-    projectPath,
-    dialect,
-    serverFramework,
-    webFramework,
-    hasServer,
-    hasWeb,
-    hasEnv,
-  } = options;
+  const { projectPath, dialect, serverFramework, hasServer, hasEnv } = options;
 
   const s = spinner();
   s.start('Configuring shared Better Auth package (@repo/auth)...');
@@ -54,37 +46,28 @@ export async function setupAuth(options: AuthSetupOptions) {
     await fsPromises.mkdir(authLibDir, { recursive: true });
 
     // 1. packages/auth/package.json
-    const exportsMap: Record<string, any> = {
-      '.': {
-        types: './src/index.ts',
-        default: './src/index.ts',
-      },
-      './lib/auth': {
-        types: './src/lib/auth.ts',
-        default: './src/lib/auth.ts',
-      },
-      './lib/origins': {
-        types: './src/lib/origins.ts',
-        default: './src/lib/origins.ts',
-      },
-    };
-
-    if (hasWeb) {
-      exportsMap['./client'] = {
-        types: './src/client.ts',
-        default: './src/client.ts',
-      };
-    }
-
     const authPkg = {
       name: '@repo/auth',
       version: '1.0.0',
-      description: 'Shared Better Auth server and client configurations',
+      description: 'Shared Better Auth server configurations',
       private: true,
       type: 'module',
       main: './src/index.ts',
       types: './src/index.ts',
-      exports: exportsMap,
+      exports: {
+        '.': {
+          types: './src/index.ts',
+          default: './src/index.ts',
+        },
+        './lib/auth': {
+          types: './src/lib/auth.ts',
+          default: './src/lib/auth.ts',
+        },
+        './lib/origins': {
+          types: './src/lib/origins.ts',
+          default: './src/lib/origins.ts',
+        },
+      },
       scripts: {
         build: 'tsc',
       },
@@ -97,18 +80,6 @@ export async function setupAuth(options: AuthSetupOptions) {
         '@config/typescript': 'workspace:*',
         typescript: '^5.7.3',
       },
-      ...(hasWeb
-        ? {
-            peerDependencies: {
-              react: '^19.0.0',
-            },
-            peerDependenciesMeta: {
-              react: {
-                optional: true,
-              },
-            },
-          }
-        : {}),
     };
 
     await fsPromises.writeFile(
@@ -305,33 +276,7 @@ export async function setupAuth(options: AuthSetupOptions) {
       'utf8',
     );
 
-    // 7. packages/auth/src/client.ts (if web application is present)
-    if (hasWeb) {
-      const authClientContent = [
-        "import { createAuthClient } from 'better-auth/react';",
-        '',
-        '/**',
-        ' * Type-Safe Better Auth Client for Web Applications',
-        ' */',
-        'export const authClient = createAuthClient({',
-        '  baseURL:',
-        "    typeof window !== 'undefined'",
-        '      ? window.location.origin',
-        "      : process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3001',",
-        '});',
-        '',
-        'export const { signIn, signOut, signUp, useSession } = authClient;',
-        '',
-      ].join('\n');
-
-      await fsPromises.writeFile(
-        path.join(authSrcDir, 'client.ts'),
-        authClientContent,
-        'utf8',
-      );
-    }
-
-    // 6. Generate packages/db/src/schema/auth.ts (Drizzle schema)
+    // 7. Generate packages/db/src/schema/auth.ts (Drizzle schema)
     const dbDir = path.join(projectPath, 'packages', 'db');
     const schemaDir = path.join(dbDir, 'src', 'schema');
     await fsPromises.mkdir(schemaDir, { recursive: true });
@@ -543,24 +488,7 @@ export async function setupAuth(options: AuthSetupOptions) {
       } catch {}
     }
 
-    // 9. Add @repo/auth to apps/web (if web exists)
-    if (hasWeb && webFramework !== 'skip') {
-      const webDir = path.join(projectPath, 'apps', 'web');
-      const webPkgPath = path.join(webDir, 'package.json');
-      try {
-        const rawPkg = await fsPromises.readFile(webPkgPath, 'utf8');
-        const pkg = JSON.parse(rawPkg);
-        pkg.dependencies = pkg.dependencies || {};
-        pkg.dependencies['@repo/auth'] = 'workspace:*';
-        await fsPromises.writeFile(
-          webPkgPath,
-          JSON.stringify(pkg, null, 2),
-          'utf8',
-        );
-      } catch {}
-    }
-
-    // 10. Update root .env and .env.example
+    // 8. Update root .env and .env.example
     const envLinesToAdd = [
       '# Better Auth',
       'BETTER_AUTH_SECRET=secret-morax-auth-key-change-in-production',

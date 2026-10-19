@@ -84,9 +84,9 @@ export async function setupReadme(
     authDocs = [
       '### Authentication (@repo/auth)',
       'Better Auth server endpoints are mounted at `/api/auth/*` on your API server.',
-      'Import client hooks in frontend applications:',
+      'Server-side authentication instance and origins are exported from `@repo/auth`:',
       '```typescript',
-      "import { authClient, useSession, signIn, signOut } from '@repo/auth/client';",
+      "import { auth } from '@repo/auth';",
       '```',
       '',
     ];
@@ -118,7 +118,7 @@ export async function setupReadme(
       : []),
     ...(options.hasAuth
       ? [
-          `  - **\`packages/auth\`** — Shared Better Auth server instance and type-safe client.`,
+          `  - **\`packages/auth\`** — Shared Better Auth server instance and configuration.`,
         ]
       : []),
     '',

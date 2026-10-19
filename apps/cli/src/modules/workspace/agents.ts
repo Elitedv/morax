@@ -156,7 +156,7 @@ export function generateClaudeMd(options: AgentDocsOptions): string {
       : []),
     ...(hasAuth
       ? [
-          '│   ├── auth/               # Shared Better Auth server & client (@repo/auth)',
+          '│   ├── auth/               # Shared Better Auth server configuration (@repo/auth)',
         ]
       : []),
     ...(hasEnv

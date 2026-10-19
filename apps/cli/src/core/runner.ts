@@ -81,19 +81,32 @@ export async function runWorkspaceScaffolder(
   // 5. Initialize workspace folders and pnpm-workspace.yaml
   await makeDirectories(name, projectPath);
 
-  // 6. Prompt and execute Git initialization
+  // =========================================================================
+  // STEP 1: Git Repository & Git Hooks (Ask -> Setup)
+  // =========================================================================
   const gitInitialized = await runGitSetup(projectPath);
-
-  // =========================================================================
-  // STEP 1: Code Quality & Linting (Ask -> Setup)
-  // =========================================================================
-  const linter = await askLinter();
-  const formatter = await askFormatter();
 
   let gitHook: GitHookType = 'none';
   if (gitInitialized) {
     gitHook = await askGitHooks();
+    if (gitHook === 'husky') {
+      await runHuskySetup(projectPath, gitInitialized);
+    } else if (gitHook === 'lefthook') {
+      await runLefthookSetup(projectPath, gitInitialized);
+    }
   }
+
+  // =========================================================================
+  // STEP 2: Frontend Web Application (Ask -> Setup)
+  // =========================================================================
+  const webFramework = await addWeb(projectPath);
+
+  // =========================================================================
+  // STEP 3: Code Quality & Modular TypeScript (Ask -> Setup)
+  // =========================================================================
+  // Dynamically recommend Oxlint for React + Vite, Biome for Next.js
+  const linter = await askLinter(webFramework);
+  const formatter = await askFormatter(linter);
 
   // Execute Biome setup if Biome was chosen for either linting or formatting
   if (linter === 'biome' || formatter === 'biome') {
@@ -113,23 +126,25 @@ export async function runWorkspaceScaffolder(
     await runPrettierSetup(projectPath);
   }
 
-  // Execute Git hooks setup (Lefthook or Husky)
-  if (gitHook === 'lefthook') {
-    await runLefthookSetup(
-      projectPath,
-      gitInitialized,
-      formatter !== 'none',
-      linter !== 'none',
-    );
-  } else if (gitHook === 'husky') {
-    await runHuskySetup(projectPath, gitInitialized);
-  }
-
   // Execute modular TypeScript setup in packages/typescript
   await runTypescriptSetup(projectPath);
 
   // =========================================================================
-  // STEP 2: Database Layer (Ask -> Setup)
+  // STEP 4: Backend Server (Ask Framework, Runtime & Deployment)
+  // =========================================================================
+  const serverFramework = await promptServerFramework();
+  let serverRuntime: ServerRuntime = 'node';
+  let deployTarget = 'none';
+  if (serverFramework !== 'none') {
+    serverRuntime = await askServerRuntime();
+    if (serverRuntime === 'bun') {
+      await checkBunAvailable();
+    }
+    deployTarget = await promptServerDeployment(serverFramework);
+  }
+
+  // =========================================================================
+  // STEP 5: Database & Docker Layer (Ask -> Setup)
   // =========================================================================
   const dbConfig = await promptDatabase();
   const setupRedis = await askRedis();
@@ -152,16 +167,8 @@ export async function runWorkspaceScaffolder(
     });
   }
 
-  // =========================================================================
-  // STEP 3: Backend Server (Ask -> Setup)
-  // =========================================================================
-  const serverFramework = await promptServerFramework();
-  let serverRuntime: ServerRuntime = 'node';
+  // If backend server is configured, execute server setup now with DB awareness
   if (serverFramework !== 'none') {
-    serverRuntime = await askServerRuntime();
-    if (serverRuntime === 'bun') {
-      await checkBunAvailable();
-    }
     await runServerSetup(
       projectPath,
       serverFramework,
@@ -170,34 +177,27 @@ export async function runWorkspaceScaffolder(
       serverRuntime,
     );
 
-    // Server Deployment Configuration (apps/server)
-    const deployTarget = await promptServerDeployment(serverFramework);
     if (deployTarget !== 'none') {
       await setupServerDeployment({
         projectPath,
         framework: serverFramework,
         runtime: serverRuntime,
-        target: deployTarget,
+        target: deployTarget as any,
       });
     }
   }
 
   // =========================================================================
-  // STEP 4: Frontend Web Application (Ask -> Setup)
+  // STEP 6: Environment & Authentication Packages (@repo/env & @repo/auth)
   // =========================================================================
-  const webFramework = await addWeb(projectPath);
+  const shouldSetupEnv = await promptEnv();
 
-  // =========================================================================
-  // STEP 5: Better Auth Package (@repo/auth) Prompt (Requires Drizzle ORM)
-  // =========================================================================
   let shouldSetupAuth = false;
   if (dbConfig.orm === 'drizzle') {
     shouldSetupAuth = await promptAuth();
   }
 
-  // =========================================================================
-  // STEP 6: Root Environment Configuration (.env, .env.example)
-  // =========================================================================
+  // Write root .env and .env.example
   await setupRootEnv(projectPath, {
     db: dbConfig,
     redis: setupRedis,
@@ -206,10 +206,7 @@ export async function runWorkspaceScaffolder(
     webFramework,
   });
 
-  // =========================================================================
-  // STEP 7: Type-Safe Environment Package (@repo/env) (Optional)
-  // =========================================================================
-  const shouldSetupEnv = await promptEnv();
+  // Setup type-safe environment package (@repo/env)
   if (shouldSetupEnv) {
     await runEnvSetup(projectPath, {
       projectPath,
@@ -224,9 +221,7 @@ export async function runWorkspaceScaffolder(
     });
   }
 
-  // =========================================================================
-  // STEP 8: Better Auth Package (@repo/auth) Configuration
-  // =========================================================================
+  // Setup Better Auth package (@repo/auth)
   if (shouldSetupAuth) {
     await setupAuth({
       projectPath,
