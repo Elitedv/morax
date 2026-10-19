@@ -1,12 +1,12 @@
-import BackgroundLines from '../BackgroundLines/BackgroundLines';
-import Navbar from '../Navbar';
-import Herosection from './Sections/Herosection';
-import MoraxImage from './Sections/MoraxImage';
-import Process from './Sections/Process/Process';
-import Features from './Sections/Features/Features';
-import Workflow from './Sections/Workflow/Workflow';
-import CTA from '../CTA/CTA';
-import Footer from '../Footer/Footer';
+import Herosection from './Folds/Herosection';
+import MoraxImage from './Folds/MoraxImage';
+import Process from './Folds/Process/Process';
+import Features from './Folds/Features/Features';
+import Workflow from './Folds/Workflow/Workflow';
+import BackgroundLines from '@/Shared/BackgroundLines/BackgroundLines';
+import Navbar from '@/Shared/Navbar';
+import CTA from '@/Shared/CTA/CTA';
+import Footer from '@/Shared/Footer/Footer';
 
 const Home = () => {
   const navItems = [

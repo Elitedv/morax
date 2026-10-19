@@ -18,7 +18,7 @@ export * from './types.js';
 
 export async function promptEnv(): Promise<boolean> {
   const result = await confirm({
-    message: 'Do you want to setup type-safe environment package (@repo/env)?',
+    message: `Configure ${pc.cyan('packages/env')}? ${pc.dim('(@repo/env: zod, dotenv)')}`,
     initialValue: true,
   });
   handleCancel(result);

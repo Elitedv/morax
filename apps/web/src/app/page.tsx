@@ -1,4 +1,4 @@
-import Home from '@/Shared/Home/Home';
+import Home from '@/modules/Home/Home';
 
 export default function HomePage() {
   return <Home />;

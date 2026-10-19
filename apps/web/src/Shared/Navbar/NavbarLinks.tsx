@@ -21,7 +21,7 @@ export const NavbarLinks = ({ items, className }: NavbarLinksProps) => {
           key={index}
           href={item.href}
           className={cn(
-            'text-[13px] text-zinc-500 hover:text-zinc-200 transition-colors duration-200 font-medium uppercase tracking-wide',
+            'hidden md:block text-[13px] text-zinc-500 hover:text-zinc-200 transition-colors duration-200 font-medium uppercase tracking-wide',
             item.active && 'text-zinc-100',
           )}
         >

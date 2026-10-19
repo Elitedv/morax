@@ -53,7 +53,22 @@ interface NavbarProps {
   navItems: NavItem[];
 }
 
-const Navbar = ({ navItems }: NavbarProps) => {
+async function getLatestNpmVersion(): Promise<string | null> {
+  try {
+    const res = await fetch('https://registry.npmjs.org/create-morax/latest', {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.version ? `v${data.version}` : null;
+  } catch {
+    return null;
+  }
+}
+
+const Navbar = async ({ navItems }: NavbarProps) => {
+  const latestVersion = await getLatestNpmVersion();
+
   return (
     <NavbarWraper>
       <NavbarWraper.Header>
@@ -70,12 +85,18 @@ const Navbar = ({ navItems }: NavbarProps) => {
       </NavbarWraper.Header>
 
       <NavbarWraper.SubBar>
-        <NavbarWraper.SubBarItem colIndex={1} align="left">
+        <NavbarWraper.SubBarItem
+          className="hidden md:block"
+          colIndex={1}
+          align="left"
+        >
           Built for PNPM Workspaces
         </NavbarWraper.SubBarItem>
-        <NavbarWraper.SubBarItem colIndex={8} align="right" status={true}>
-          Current v1.0.4
-        </NavbarWraper.SubBarItem>
+        {latestVersion && (
+          <NavbarWraper.SubBarItem colIndex={8} align="right" status={true}>
+            Current {latestVersion}
+          </NavbarWraper.SubBarItem>
+        )}
       </NavbarWraper.SubBar>
     </NavbarWraper>
   );

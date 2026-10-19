@@ -22,7 +22,7 @@ export function startCli() {
   console.log(moraxGradient(asciiArt));
   console.log('\n');
 
-  intro(pc.yellow('🌌 Welcome to Morax — The Next-Gen Workspace Scaffolder'));
+  intro(pc.yellow('Welcome to Morax — The Next-Gen Workspace Scaffolder'));
 
   console.log(
     boxen(

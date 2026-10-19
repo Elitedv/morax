@@ -1,7 +1,5 @@
 'use client';
-
-import React, { useState } from 'react';
-import BackgroundLines from '@/Shared/BackgroundLines/BackgroundLines';
+import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import Section from '@/Shared/Seaction/Section';
 
@@ -21,13 +19,13 @@ const Herosection = () => {
   return (
     <Section>
       <div className="min-h-[500px] flex flex-col justify-center py-10">
-        <div className="text-3xl md:text-5xl lg:text-6xl lg:leading-18">
+        <div className="text-2xl md:text-5xl lg:text-6xl lg:leading-18">
           <h1 className="text-white">The Fastest Way to Start a</h1>
           <h2 className="text-white">
-            Monorepo
-            <span className="text-orange-500 ml-4 font-semibold">
+            <span className="text-orange-500 mr-2 md:mr-4 font-semibold">
               PNPM Workspaces
             </span>
+            Monorepo
           </h2>
         </div>
 

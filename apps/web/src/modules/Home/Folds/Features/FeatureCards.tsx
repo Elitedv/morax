@@ -58,12 +58,12 @@ export const FeatureCard = ({
       <WireframeWrapper backdrop={backdrop}>{icon}</WireframeWrapper>
 
       {/* Feature Title */}
-      <h3 className="text-lg md:text-xl text-white font-medium mb-3 tracking-tight font-sans transition-colors duration-300 group-hover:text-orange-500">
+      <h3 className="text-lg md:text-xl text-white text-center font-medium mb-3 tracking-tight font-sans transition-colors duration-300 group-hover:text-orange-500">
         {title}
       </h3>
 
       {/* Feature Description Paragraph */}
-      <p className="font-mono text-zinc-400 text-xs md:text-[12.5px] leading-relaxed select-text mt-1 text-left">
+      <p className="font-mono text-zinc-400 text-xs md:text-[12.5px] leading-relaxed select-text mt-1 text-center">
         {description}
       </p>
     </div>

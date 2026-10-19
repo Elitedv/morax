@@ -7,7 +7,7 @@ const Features = () => {
     <Section id="feature" className="py-24 text-white">
       <SectionHeading
         badge="FEATURES"
-        title="Powerful Scaffolding. Zero Manual Setup"
+        title="Powerful Scaffolding. Zero Manual"
         description="Six custom workspace engines working in parallel to orchestrate your entire monorepo"
       />
       <FeatureCards />

@@ -23,7 +23,7 @@ export interface AuthSetupOptions {
 
 export async function promptAuth(): Promise<boolean> {
   const result = await confirm({
-    message: 'Configure authentication (Better Auth)?',
+    message: `Configure ${pc.cyan('packages/auth')}? ${pc.dim('(@repo/auth: better-auth & Drizzle schemas)')}`,
     initialValue: true,
   });
 

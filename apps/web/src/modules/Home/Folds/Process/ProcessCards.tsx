@@ -120,9 +120,9 @@ const ProcessCards = () => {
             >
               {/* Highlight bar */}
               {isActive && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-orange-500 rounded-full shadow-[0_0_8px_#f97316]"></span>
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-orange-500 rounded-full shadow-[0_0_8px_#f97316]"></span>
               )}
-              <span className="text-orange-500 w-4 h-4 flex items-center justify-center shrink-0">
+              <span className="text-orange-500 w-4 h-4 hidden md:flex items-center justify-center shrink-0">
                 {phase.icon}
               </span>
               <span className="hidden md:inline mr-1 opacity-60">
@@ -280,7 +280,7 @@ export const DynamicScaffoldingVisual = () => {
 
           {/* Vertical connecting wire */}
           <div className="w-px bg-zinc-800/80 h-16 relative">
-            <span className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[2px] h-6 bg-orange-500 shadow-[0_0_8px_#f97316]"></span>
+            <span className="absolute top-1/4 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-orange-500 shadow-[0_0_8px_#f97316]"></span>
           </div>
 
           {/* Bottom: Morax Engine Turbine Spinner */}

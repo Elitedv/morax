@@ -124,7 +124,7 @@ export default function RootLayout({
             <FontInitializer />
           </>
         )}
-        <SmoothScroll>{children}</SmoothScroll>
+        {children}
         <Analytics />
         {process.env.NODE_ENV === 'development' && (
           <>
