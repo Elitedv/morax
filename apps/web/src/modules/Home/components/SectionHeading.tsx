@@ -25,7 +25,7 @@ const SectionHeading = ({
         </h2>
 
         {/* Monospace Sub-heading */}
-        <p className="font-mono text-xs md:text-lg text-zinc-500 mt-4 text-center select-none">
+        <p className="font-mono text-xs md:text-lg text-zinc-500 mt-4 max-w-2xl mx-auto text-center select-none">
           {description}
         </p>
       </div>

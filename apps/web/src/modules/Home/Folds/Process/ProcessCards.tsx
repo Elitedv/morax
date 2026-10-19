@@ -9,9 +9,6 @@ import {
   Globe,
   Palette,
   Database,
-  Laptop,
-  Server,
-  Cpu,
   Link2,
   FileSliders,
   Cog,
@@ -37,7 +34,7 @@ const PHASES: PhaseData[] = [
     icon: <FileSliders />,
     leftTitle: 'Define Your Monorepo Architecture',
     leftDesc:
-      'Configure your monorepo parameters interactively in seconds. Choose your target apps (Next.js, Vite, Hono) and shared internal packages (UI, DB, configurations) through a modern, responsive developer CLI.',
+      'Configure apps and shared packages interactively in seconds through a modern CLI.',
     rightStatus: 'CONFIG ACTIVE',
   },
   {
@@ -47,7 +44,7 @@ const PHASES: PhaseData[] = [
     icon: <Cog />,
     leftTitle: 'Dynamic CLIs, Always Current Templates',
     leftDesc:
-      'Instead of maintaining stale boilerplates, Morax acts as a smart orchestrator that dynamically executes official generators (like create-next-app and shadcn init) to guarantee you always run the latest features.',
+      'Dynamically executes official generators so your stack always runs the latest features.',
     rightStatus: 'ORCHESTRATING 58%',
   },
   {
@@ -57,7 +54,7 @@ const PHASES: PhaseData[] = [
     icon: <Unlink />,
     leftTitle: 'Zero-Configuration Symlinking & Bootstrapping',
     leftDesc:
-      'Morax programmatically injects local dependency symlinks ("@workspace/ui": "workspace:*"), automatically configures your workspace configurations, and bootstraps the monorepo cache via a global pnpm install.',
+      'Automatically injects workspace symlinks and bootstraps dependencies with zero manual setup.',
     rightStatus: 'BOOTSTRAPPED 100%',
   },
 ];
@@ -147,11 +144,7 @@ const ProcessCards = () => {
           <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-orange-500/5 blur-[120px] pointer-events-none group-hover:bg-orange-500/10 transition-all duration-500" />
 
           {/* Top Right Monospace Phase Badge */}
-          <div className="flex justify-between items-center text-[10px] md:text-xs text-zinc-500 tracking-[0.15em] font-medium uppercase select-none">
-            <div className="text-orange-500 flex items-center gap-1">
-              <div className="size-2 animate-caret-blink bg-orange-500 rounded-full shadow-[0_0_8px_#f97316]"></div>
-              {/* 0{activeTab} */}
-            </div>
+          <div className="flex justify-end items-center text-[10px] md:text-xs text-zinc-500 tracking-[0.15em] font-medium uppercase select-none">
             {PHASES[activeTab - 1].badge}
           </div>
 
@@ -169,7 +162,8 @@ const ProcessCards = () => {
         {/* Right Card: Visualization Wrapper */}
         <div className="relative min-h-[420px] border-dashed border border-zinc-800/80 bg-[#0B0B0B] p-8 md:p-10 flex items-center justify-center overflow-hidden shadow-2xl transition-all duration-500 font-fira-code ">
           {/* Top Right Status Monospace Label */}
-          <div className="absolute top-6 right-8 font-mono text-xs text-orange-500 font-semibold tracking-wider select-none">
+          <div className="absolute top-6 right-8 font-mono text-xs text-orange-500 font-semibold tracking-wider select-none flex items-center gap-2">
+            <div className="size-2 shrink-0 animate-caret-blink bg-orange-500 rounded-full shadow-[0_0_8px_#f97316]" />
             {PHASES[activeTab - 1].rightStatus}
           </div>
 
@@ -190,7 +184,7 @@ export const InteractivePromptVisual = () => {
   return (
     <div className="w-full max-w-sm flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Sleek Terminal Box */}
-      <div className="bg-[#060606] border border-zinc-900 rounded-none p-6 shadow-2xl flex flex-col gap-4.5 font-mono text-[11.5px] leading-[1.6]">
+      <div className="bg-[#060606] border border-zinc-900 rounded-none p-4 shadow-2xl flex flex-col gap-4.5 font-mono text-[11.5px] leading-[1.6]">
         {/* Terminal Header */}
         <div className="flex items-center justify-between border-b border-zinc-900 pb-3.5 mb-1.5 select-none">
           <div className="flex items-center gap-1.5">
@@ -234,10 +228,6 @@ export const InteractivePromptVisual = () => {
                   <span>[x]</span>
                   <span>Vite + React Template (desktop)</span>
                 </div>
-                <div className="flex items-center gap-2 text-zinc-600">
-                  <span>[ ]</span>
-                  <span>Hono API Framework (api)</span>
-                </div>
               </div>
             </div>
 
@@ -252,10 +242,6 @@ export const InteractivePromptVisual = () => {
                 <div className="flex items-center gap-2 text-emerald-400">
                   <span>[x]</span>
                   <span>Shared UI Components (@workspace/ui)</span>
-                </div>
-                <div className="flex items-center gap-2 text-emerald-400">
-                  <span>[x]</span>
-                  <span>Database Schema Client (@workspace/db)</span>
                 </div>
               </div>
             </div>

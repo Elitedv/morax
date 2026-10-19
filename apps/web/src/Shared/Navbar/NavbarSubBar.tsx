@@ -10,7 +10,7 @@ interface NavbarSubBarProps {
 export const NavbarSubBar = ({
   children,
   className,
-  gridCols = 8,
+  // gridCols = 8,
 }: NavbarSubBarProps) => {
   return (
     <div
@@ -61,7 +61,7 @@ export const NavbarSubBarItem = ({
   return (
     <div
       className={cn(
-        'py-3.5 flex items-center min-h-[44px] z-20',
+        'py-3.5 flex items-center min-h-11 z-20',
         align === 'right'
           ? 'justify-end text-right'
           : 'justify-start text-left',

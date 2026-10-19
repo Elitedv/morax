@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import React, { useState, useEffect, useRef, useTransition } from 'react';
@@ -10,7 +11,6 @@ import {
   RefreshCw,
   ChevronDown,
   Sparkles,
-  Laptop,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -486,7 +486,7 @@ export default function FontChanger() {
 
                   {/* Dropdown Menu Portal */}
                   {isDropdownOpen && (
-                    <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[320px]">
+                    <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-80">
                       {/* Search & Filter Header */}
                       <div className="p-3 border-b border-zinc-900 bg-zinc-900/10 space-y-2.5">
                         <div className="relative">

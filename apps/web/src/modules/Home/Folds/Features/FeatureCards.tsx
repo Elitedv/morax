@@ -76,42 +76,42 @@ const FeatureCards = () => {
     {
       title: 'Zero-Config Workspaces',
       description:
-        'Bootstraps target package folders, initializes clean global lockfiles, and drafts compliant root setups dynamically in seconds.',
+        'Bootstraps package structures and root configs dynamically in seconds.',
       icon: <FolderGit2 className="w-8 h-8" strokeWidth={1.5} />,
       backdrop: <WorkspaceConfigWireframe />,
     },
     {
       title: 'Orchestrator Engine',
       description:
-        'Programmatically invokes official package generators (like create-next-app and shadcn-cli) to guarantee up-to-date workspace templates.',
+        'Executes official generators directly to guarantee always up-to-date templates.',
       icon: <Cpu className="w-8 h-8" strokeWidth={1.5} />,
       backdrop: <ScaffoldingEngineWireframe />,
     },
     {
       title: 'PNPM Workspaces',
       description:
-        'Orchestrates unified node_modules, global caching, and multi-package monorepo script runs natively via pnpm CLI commands.',
+        'Unified dependency caching and fast script execution powered by pnpm.',
       icon: <Zap className="w-8 h-8" strokeWidth={1.5} />,
       backdrop: <TurborepoWireframe />,
     },
     {
       title: 'Automated Symlinking',
       description:
-        'Automates cross-package dependency tracking via local symlinks ("workspace:*"), ensuring zero manual resolution efforts.',
+        'Wires cross-package dependencies with local symlinks and zero manual config.',
       icon: <Link2 className="w-8 h-8" strokeWidth={1.5} />,
       backdrop: <SymlinkWireframe />,
     },
     {
       title: 'Shared UI Components',
       description:
-        'Configures internal component modules ready to import, pre-linked with Tailwind CSS layouts, configs, and Shadcn assets.',
+        'Pre-configured internal UI modules ready to import across all apps.',
       icon: <Palette className="w-8 h-8" strokeWidth={1.5} />,
       backdrop: <SharedUiWireframe />,
     },
     {
       title: 'Full Config Control',
       description:
-        'User can install exactly what they need. Select, customize, and plug in configurations or database systems based solely on your workspace requirement.',
+        'Install only what you need with full control over tools and configs.',
       icon: <Database className="w-8 h-8" strokeWidth={1.5} />,
       backdrop: <DatabaseWireframe />,
     },
