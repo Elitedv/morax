@@ -55,7 +55,6 @@ export async function installSkills(
   }
 
   const s = spinner();
-  const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
   for (const skillId of selectedSkillIds) {
     const skill = CURATED_SKILLS.find((item) => item.id === skillId);
@@ -63,7 +62,7 @@ export async function installSkills(
 
     s.start(`Installing skill: ${pc.cyan(skill.name)} via skills.sh...`);
     try {
-      const command = `${npxCmd} -y skills add ${skill.repo} --skill ${skill.id} -y`;
+      const command = `pnpm dlx skills add ${skill.repo} --skill ${skill.id} -y`;
       await runCommand(command, { cwd: projectPath, silent: true });
       s.stop(pc.green(`✔ Installed ${skill.name} successfully`));
     } catch (error: any) {
