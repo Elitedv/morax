@@ -1,6 +1,7 @@
 import { confirm } from '@clack/prompts';
 import pc from 'picocolors';
 import handleCancel from '../../../utils/isCancel.js';
+import { removeBunLockfiles } from '../../../utils/cleanBunLock.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -49,13 +50,16 @@ export async function setupShadcn(projectPath: string, isMonorepo = true) {
     ? path.join(projectPath, 'apps', 'web')
     : projectPath;
 
-  // Run pnpm dlx shadcn@latest init --template next interactively!
+  // Run bunx shadcn@latest init --template next interactively!
   console.log(pc.cyan('\nStarting interactive shadcn UI initialization...'));
   await runInteractiveCommand(
-    'pnpm',
-    ['dlx', 'shadcn@latest', 'init', '--template', 'next'],
+    'bunx',
+    ['shadcn@latest', 'init', '--template', 'next'],
     webDir,
   );
+
+  // Clean up any stray bun lockfiles
+  await removeBunLockfiles(webDir, projectPath);
 }
 
 export async function runShadcnSetup(projectPath: string, isMonorepo = true) {

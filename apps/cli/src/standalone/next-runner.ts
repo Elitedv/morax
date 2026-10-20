@@ -1,6 +1,7 @@
 import path from 'path';
 import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
+import { removeBunLockfiles } from '../utils/cleanBunLock.js';
 
 import { setupNextjs } from '../modules/apps/web/nextjs.js';
 import { runShadcnSetup } from '../modules/apps/web/shadcn.js';
@@ -22,7 +23,10 @@ export async function runNextScaffolder(name: string, projectPath: string) {
   // 4. Prompt and execute Git initialization inside the created project folder
   await runGitSetup(finalProjectPath);
 
-  // 5. Run final pnpm install to ensure all dependencies are installed
+  // 5. Sweep any stray bun lockfiles before final pnpm install
+  await removeBunLockfiles(finalProjectPath);
+
+  // 6. Run final pnpm install to ensure all dependencies are installed
   const installSpinner = spinner();
   installSpinner.start('Running final package installation...');
   try {

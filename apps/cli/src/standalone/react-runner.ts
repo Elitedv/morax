@@ -1,6 +1,7 @@
 import path from 'path';
 import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
+import { removeBunLockfiles } from '../utils/cleanBunLock.js';
 
 import { setupReact } from '../modules/apps/web/react.js';
 import { runGitSetup } from '../modules/git/git.js';
@@ -18,7 +19,10 @@ export async function runReactScaffolder(name: string, projectPath: string) {
   // 3. Prompt and execute Git initialization inside the created project folder
   await runGitSetup(finalProjectPath);
 
-  // 4. Run final pnpm install to ensure all dependencies are installed
+  // 4. Sweep any stray bun lockfiles before final pnpm install
+  await removeBunLockfiles(finalProjectPath);
+
+  // 5. Run final pnpm install to ensure all dependencies are installed
   const installSpinner = spinner();
   installSpinner.start('Running final package installation...');
   try {

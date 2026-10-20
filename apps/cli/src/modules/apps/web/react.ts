@@ -5,6 +5,7 @@ import { spawn } from 'child_process';
 import { confirm, spinner, text } from '@clack/prompts';
 import handleCancel from '../../../utils/isCancel.js';
 import { runCommand } from '../../../utils/exec.js';
+import { removeBunLockfiles } from '../../../utils/cleanBunLock.js';
 
 function runInteractiveCommand(
   command: string,
@@ -74,7 +75,7 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
   } catch {}
 
   try {
-    await runInteractiveCommand('pnpm', ['create', 'vite@latest'], appsDir);
+    await runInteractiveCommand('bunx', ['create-vite@latest'], appsDir);
 
     // Get list of directories in appsDir after running Vite
     let afterDirs: string[] = [];
@@ -98,6 +99,9 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
         `Vite React application directory "apps/${createdDirName}" was not found. Please ensure you complete the Vite installation.`,
       );
     }
+
+    // Clean up any stray bun lockfiles
+    await removeBunLockfiles(webDir, projectPath);
 
     // Ensure that in a monorepo the web package name is always "web"
     const pkgPath = path.join(webDir, 'package.json');
@@ -319,7 +323,7 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
         presetCode = (enteredPreset as string).trim();
       }
 
-      const args = ['dlx', 'shadcn@latest', 'init'];
+      const args = ['shadcn@latest', 'init'];
       if (presetCode) {
         args.push('--preset', presetCode);
       }
@@ -328,7 +332,10 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
       console.log(
         pc.cyan('\nStarting interactive shadcn UI initialization...'),
       );
-      await runInteractiveCommand('pnpm', args, webDir);
+      await runInteractiveCommand('bunx', args, webDir);
+
+      // Clean up any stray bun lockfiles
+      await removeBunLockfiles(webDir, projectPath);
       console.log(
         pc.green(
           isMonorepo

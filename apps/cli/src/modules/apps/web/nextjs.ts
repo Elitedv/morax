@@ -1,6 +1,7 @@
 import { confirm } from '@clack/prompts';
 import pc from 'picocolors';
 import handleCancel from '../../../utils/isCancel.js';
+import { removeBunLockfiles } from '../../../utils/cleanBunLock.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -53,13 +54,16 @@ export async function setupNextjs(projectPath: string, isMonorepo = true) {
     await fsPromises.rm(webDir, { recursive: true, force: true });
   } catch {}
 
-  // 2. Run pnpm dlx create-next-app@latest interactively!
+  // 2. Run bunx create-next-app@latest interactively!
   console.log(pc.cyan('\nStarting interactive Next.js application setup...'));
   await runInteractiveCommand(
-    'pnpm',
-    ['dlx', 'create-next-app@latest', targetName],
+    'bunx',
+    ['create-next-app@latest', targetName],
     appsDir,
   );
+
+  // Clean up any stray bun lockfiles
+  await removeBunLockfiles(webDir, projectPath);
 
   // Clean up any inner .git directory if created in monorepo apps/web
   if (isMonorepo) {

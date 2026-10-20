@@ -95,14 +95,14 @@ export async function runPreflightChecks(): Promise<PreflightResult> {
     process.exit(1);
   }
 
-  // 4. Bun check (Optional)
+  // 4. Bun check (Required)
   const bunSpinner = ora({
     text: 'Verifying Bun runtime...',
     color: 'cyan',
   }).start();
   await sleep(150);
 
-  let bunVersion: string | null = null;
+  let bunVersion = '';
   try {
     const { stdout } = await runCommand('bun --version', { silent: true });
     bunVersion = stdout.trim();
@@ -115,9 +115,23 @@ export async function runPreflightChecks(): Promise<PreflightResult> {
     });
   } catch {
     bunSpinner.stopAndPersist({
-      symbol: warn,
-      text: `Verifying Bun runtime. ${pc.yellow('Not found')} (optional).`,
+      symbol: cross,
+      text: 'Verifying Bun runtime. Not found.',
     });
+    console.log(
+      '\n' +
+        pc.red(
+          '✖ Error: Bun is required to scaffold and execute high-performance Morax apps.\n',
+        ) +
+        pc.cyan('  • Install Bun:   https://bun.sh\n') +
+        pc.cyan(
+          '  • Windows:       powershell -c "irm bun.sh/install.ps1 | iex"\n',
+        ) +
+        pc.cyan(
+          '  • macOS / Linux: curl -fsSL https://bun.sh/install | bash\n',
+        ),
+    );
+    process.exit(1);
   }
 
   // 5. Docker check (Optional warning)

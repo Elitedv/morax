@@ -1,6 +1,7 @@
 import path from 'path';
 import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
+import { removeBunLockfiles } from '../utils/cleanBunLock.js';
 
 import { startCli } from './startcli.js';
 import {
@@ -276,6 +277,9 @@ export async function runWorkspaceScaffolder(
   // STEP 8: AI Agent Skills (skills.sh) (Optional)
   // =========================================================================
   await promptAndInstallSkills(projectPath);
+
+  // Sweep any stray bun lockfiles across the workspace before pnpm install
+  await removeBunLockfiles(projectPath);
 
   // Final pnpm install to resolve all workspace packages, symlinks & dependencies
   const s = spinner();
