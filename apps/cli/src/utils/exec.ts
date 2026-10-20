@@ -16,9 +16,9 @@ export async function runCommand(
   command: string,
   options: RunCommandOptions = {},
 ) {
-  options.silent = true;
+  const isSilent = options.silent ?? false;
 
-  if (!options.silent) {
+  if (!isSilent) {
     console.log(pc.cyan(`> ${command}`));
   }
 
@@ -28,7 +28,7 @@ export async function runCommand(
       env: { ...process.env, NODE_NO_WARNINGS: '1' },
     });
 
-    if (!options.silent) {
+    if (!isSilent) {
       if (stdout && stdout.trim()) {
         console.log(stdout.trim());
       }
@@ -39,13 +39,15 @@ export async function runCommand(
 
     return { stdout, stderr };
   } catch (error: any) {
-    if (!options.silent) {
+    if (!isSilent) {
       if (error.stdout && error.stdout.trim()) {
         console.log(error.stdout.trim());
       }
       if (error.stderr && error.stderr.trim()) {
         console.error(pc.red(error.stderr.trim()));
       }
+    } else if (error.stderr && error.stderr.trim()) {
+      error.message = `${error.message}\n${error.stderr.trim()}`;
     }
     throw error;
   }

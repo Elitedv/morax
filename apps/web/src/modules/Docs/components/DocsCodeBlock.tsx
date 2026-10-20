@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import Prism from 'prismjs';
 
 // Language grammars
@@ -128,10 +129,12 @@ export const DocsCodeBlock = ({
         </button>
       </div>
 
-      {/* Code Content with Syntax Highlighting */}
-      <pre className="prism-code p-4 overflow-x-auto text-zinc-300 font-mono text-[13px] leading-relaxed select-text">
-        <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
-      </pre>
+      {/* Code Content with Syntax Highlighting using Shadcn ScrollArea */}
+      <ScrollArea className="w-full">
+        <pre className="prism-code p-4 text-zinc-300 font-mono text-[13px] leading-relaxed select-text w-max min-w-full">
+          <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+        </pre>
+      </ScrollArea>
     </div>
   );
 };

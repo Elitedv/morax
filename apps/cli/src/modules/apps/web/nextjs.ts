@@ -71,20 +71,25 @@ export async function setupNextjs(projectPath: string, isMonorepo = true) {
     } catch {}
   }
 
-  // 3. Rename package name to "web" in apps/web/package.json if monorepo
-  if (isMonorepo) {
-    const webPkgPath = path.join(webDir, 'package.json');
-    try {
-      const webPkgRaw = await fsPromises.readFile(webPkgPath, 'utf8');
-      const webPkg = JSON.parse(webPkgRaw);
+  // 3. Rename package name to "web" in apps/web/package.json if monorepo, or configure standalone pnpm
+  const webPkgPath = path.join(webDir, 'package.json');
+  try {
+    const webPkgRaw = await fsPromises.readFile(webPkgPath, 'utf8');
+    const webPkg = JSON.parse(webPkgRaw);
+    if (isMonorepo) {
       webPkg.name = 'web';
-      await fsPromises.writeFile(
-        webPkgPath,
-        JSON.stringify(webPkg, null, 2),
-        'utf8',
-      );
-    } catch {}
-  }
+    } else {
+      webPkg.pnpm = {
+        ...(webPkg.pnpm || {}),
+        onlyBuiltDependencies: ['sharp'],
+      };
+    }
+    await fsPromises.writeFile(
+      webPkgPath,
+      JSON.stringify(webPkg, null, 2),
+      'utf8',
+    );
+  } catch {}
   return webDir;
 }
 

@@ -10,10 +10,23 @@ export async function generateWorkspaceConfig(
   // 1. Create target folder if it doesn't exist
   await fsPromises.mkdir(projectPath, { recursive: true });
 
+  const defaultOnlyBuiltDeps = [
+    'esbuild',
+    '@biomejs/biome',
+    'oxlint',
+    'lefthook',
+    'sharp',
+  ];
+
   // 2. Generate pnpm-workspace.yaml based on user's selective input
   const workspaceYamlContent = [
     'packages:',
     ...directories.map((dir) => `  - '${dir}/*'`),
+    '',
+    'onlyBuiltDependencies:',
+    ...defaultOnlyBuiltDeps.map((dep) =>
+      dep.startsWith('@') ? `  - '${dep}'` : `  - ${dep}`,
+    ),
     '',
   ].join('\n');
 
@@ -46,6 +59,10 @@ export async function generateWorkspaceConfig(
   } catch {
     pkg.packageManager = 'pnpm@latest';
   }
+
+  pkg.pnpm = {
+    onlyBuiltDependencies: defaultOnlyBuiltDeps,
+  };
 
   pkg.workspaces = directories.map((dir) => `${dir}/*`);
   pkg.scripts = {

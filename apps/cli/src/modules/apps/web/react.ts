@@ -100,19 +100,20 @@ export async function setupReact(projectPath: string, isMonorepo = true) {
     }
 
     // Ensure that in a monorepo the web package name is always "web"
-    if (isMonorepo) {
-      try {
-        const pkgPath = path.join(webDir, 'package.json');
-        const pkgRaw = await fsPromises.readFile(pkgPath, 'utf8');
-        const pkg = JSON.parse(pkgRaw);
+    const pkgPath = path.join(webDir, 'package.json');
+    try {
+      const pkgRaw = await fsPromises.readFile(pkgPath, 'utf8');
+      const pkg = JSON.parse(pkgRaw);
+      if (isMonorepo) {
         pkg.name = 'web';
-        await fsPromises.writeFile(
-          pkgPath,
-          JSON.stringify(pkg, null, 2),
-          'utf8',
-        );
-      } catch {}
-    }
+      } else {
+        pkg.pnpm = {
+          ...(pkg.pnpm || {}),
+          onlyBuiltDependencies: ['esbuild'],
+        };
+      }
+      await fsPromises.writeFile(pkgPath, JSON.stringify(pkg, null, 2), 'utf8');
+    } catch {}
 
     // Always configure Path Aliases & @types/node right away so import aliases are ready
     const aliasSpinner = spinner();
