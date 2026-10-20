@@ -13,7 +13,10 @@ export async function promptPrettier() {
 
 export async function setupPrettier(projectPath: string) {
   // 1. Install prettier dynamically with exact version at the workspace root
-  await runCommand('pnpm add -D -E prettier -w', { cwd: projectPath });
+  await runCommand('pnpm add -D -E prettier -w', {
+    cwd: projectPath,
+    silent: true,
+  });
 
   // 2. Generate standard .prettierrc JSON config
   const prettierConfig = {

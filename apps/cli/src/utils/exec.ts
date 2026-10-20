@@ -16,7 +16,7 @@ export async function runCommand(
   command: string,
   options: RunCommandOptions = {},
 ) {
-  const isSilent = options.silent ?? false;
+  const isSilent = options.silent ?? true;
 
   if (!isSilent) {
     console.log(pc.cyan(`> ${command}`));

@@ -94,13 +94,13 @@ export async function setupExpress(options: ServerSetupOptions) {
   const deps = getExpressDependencies();
   await runCommand(`pnpm add ${deps.join(' ')}`, {
     cwd: serverDir,
-    silent: false,
+    silent: true,
   });
 
   const devDeps = getExpressDevDependencies(runtime);
   await runCommand(`pnpm add -D ${devDeps.join(' ')}`, {
     cwd: serverDir,
-    silent: false,
+    silent: true,
   });
 
   // 7. Create src/index.ts with starter code

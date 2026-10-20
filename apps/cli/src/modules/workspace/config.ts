@@ -60,10 +60,6 @@ export async function generateWorkspaceConfig(
     pkg.packageManager = 'pnpm@latest';
   }
 
-  pkg.pnpm = {
-    onlyBuiltDependencies: defaultOnlyBuiltDeps,
-  };
-
   pkg.workspaces = directories.map((dir) => `${dir}/*`);
   pkg.scripts = {
     dev: 'pnpm -r --parallel dev',

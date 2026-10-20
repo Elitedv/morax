@@ -13,10 +13,16 @@ export async function promptHusky() {
 
 export async function setupHusky(projectPath: string) {
   // 1. Install Husky dynamically with exact version at the workspace root
-  await runCommand('pnpm add -D -E husky -w', { cwd: projectPath });
+  await runCommand('pnpm add -D -E husky -w', {
+    cwd: projectPath,
+    silent: true,
+  });
 
   // 2. Initialize Husky using its official init generator
-  await runCommand('pnpm exec husky init', { cwd: projectPath });
+  await runCommand('pnpm exec husky init', {
+    cwd: projectPath,
+    silent: true,
+  });
 
   // 3. Update the auto-generated .husky/pre-commit file to run format and stage files
   const preCommitPath = path.join(projectPath, '.husky', 'pre-commit');

@@ -185,21 +185,21 @@ export async function setupDrizzle(
   if (dialect === 'sqlite') {
     await runCommand('pnpm add drizzle-orm@rc @libsql/client dotenv', {
       cwd: dbDir,
-      silent: false,
+      silent: true,
     });
   } else if (postgresProvider === 'neon') {
     await runCommand(
       'pnpm add drizzle-orm@rc @neondatabase/serverless dotenv',
       {
         cwd: dbDir,
-        silent: false,
+        silent: true,
       },
     );
   } else {
     // Docker / standard PostgreSQL
     await runCommand('pnpm add drizzle-orm@rc pg dotenv @types/pg', {
       cwd: dbDir,
-      silent: false,
+      silent: true,
     });
   }
 
@@ -207,7 +207,7 @@ export async function setupDrizzle(
     'pnpm add -D drizzle-kit@rc @types/node tsx typescript@latest',
     {
       cwd: dbDir,
-      silent: false,
+      silent: true,
     },
   );
 

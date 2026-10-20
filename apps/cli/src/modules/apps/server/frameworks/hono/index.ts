@@ -94,13 +94,13 @@ export async function setupHono(options: ServerSetupOptions) {
   const deps = getHonoDependencies(runtime);
   await runCommand(`pnpm add ${deps.join(' ')}`, {
     cwd: serverDir,
-    silent: false,
+    silent: true,
   });
 
   const devDeps = getHonoDevDependencies(runtime);
   await runCommand(`pnpm add -D ${devDeps.join(' ')}`, {
     cwd: serverDir,
-    silent: false,
+    silent: true,
   });
 
   // 7. Create src/index.ts with starter code
