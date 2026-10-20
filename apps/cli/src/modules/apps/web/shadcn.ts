@@ -4,44 +4,13 @@ import handleCancel from '../../../utils/isCancel.js';
 import { removeBunLockfiles } from '../../../utils/cleanBunLock.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { spawn } from 'child_process';
+import { runInteractiveCommand } from '../../../utils/exec.js';
 
 export async function promptShadcn() {
   return await confirm({
     message:
       'Do you want to setup shadcn UI in your Next.js website (apps/web)?',
     initialValue: true,
-  });
-}
-
-function runInteractiveCommand(
-  command: string,
-  args: string[],
-  cwd: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd,
-      stdio: 'inherit',
-      shell: true,
-      env: { ...process.env, NODE_NO_WARNINGS: '1' },
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(
-          new Error(
-            `Command "${command} ${args.join(' ')}" exited with code ${code}`,
-          ),
-        );
-      }
-    });
-
-    child.on('error', (err) => {
-      reject(err);
-    });
   });
 }
 

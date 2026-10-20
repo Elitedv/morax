@@ -4,41 +4,12 @@ import handleCancel from '../../../utils/isCancel.js';
 import { removeBunLockfiles } from '../../../utils/cleanBunLock.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { spawn } from 'child_process';
+import { runInteractiveCommand } from '../../../utils/exec.js';
 
 export async function promptNextjs() {
   return await confirm({
     message: 'Do you want to setup a Next.js frontend in apps/web?',
     initialValue: true,
-  });
-}
-
-function runInteractiveCommand(
-  command: string,
-  args: string[],
-  cwd: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const fullCommand =
-      args.length > 0 ? `${command} ${args.join(' ')}` : command;
-    const child = spawn(fullCommand, [], {
-      cwd,
-      stdio: 'inherit',
-      shell: true,
-      env: { ...process.env, NODE_NO_WARNINGS: '1' },
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Command "${fullCommand}" exited with code ${code}`));
-      }
-    });
-
-    child.on('error', (err) => {
-      reject(err);
-    });
   });
 }
 

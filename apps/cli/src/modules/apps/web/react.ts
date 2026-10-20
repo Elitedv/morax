@@ -1,44 +1,10 @@
 import pc from 'picocolors';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { spawn } from 'child_process';
 import { confirm, spinner, text } from '@clack/prompts';
 import handleCancel from '../../../utils/isCancel.js';
-import { runCommand } from '../../../utils/exec.js';
+import { runCommand, runInteractiveCommand } from '../../../utils/exec.js';
 import { removeBunLockfiles } from '../../../utils/cleanBunLock.js';
-
-function runInteractiveCommand(
-  command: string,
-  args: string[],
-  cwd: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const fullCommand =
-      args.length > 0 ? `${command} ${args.join(' ')}` : command;
-    const child = spawn(fullCommand, [], {
-      cwd,
-      stdio: 'inherit',
-      shell: true,
-      env: { ...process.env, NODE_NO_WARNINGS: '1' },
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(
-          new Error(
-            `Command "${command} ${args.join(' ')}" exited with code ${code}`,
-          ),
-        );
-      }
-    });
-
-    child.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
 
 export async function setupReact(projectPath: string, isMonorepo = true) {
   const appsDir = isMonorepo

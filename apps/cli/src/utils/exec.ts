@@ -25,7 +25,12 @@ export async function runCommand(
   try {
     const { stdout, stderr } = await execAsync(command, {
       cwd: options.cwd,
-      env: { ...process.env, NODE_NO_WARNINGS: '1' },
+      env: {
+        ...process.env,
+        NODE_NO_WARNINGS: '1',
+        NODE_OPTIONS:
+          `${process.env.NODE_OPTIONS || ''} --no-deprecation`.trim(),
+      },
     });
 
     if (!isSilent) {
@@ -54,7 +59,9 @@ export async function runCommand(
 }
 
 /**
- * Helper to run interactive commands with inherited stdio
+ * Helper to run interactive commands with inherited stdio.
+ * Note: Calling spawn(fullCommand, { shell: true }) without the args array
+ * avoids Node.js 22+ DEP0190 deprecation warning.
  */
 export function runInteractiveCommand(
   command: string,
@@ -64,11 +71,16 @@ export function runInteractiveCommand(
   return new Promise((resolve, reject) => {
     const fullCommand =
       args.length > 0 ? `${command} ${args.join(' ')}` : command;
-    const child = spawn(fullCommand, [], {
+    const child = spawn(fullCommand, {
       cwd,
       stdio: 'inherit',
       shell: true,
-      env: { ...process.env, NODE_NO_WARNINGS: '1' },
+      env: {
+        ...process.env,
+        NODE_NO_WARNINGS: '1',
+        NODE_OPTIONS:
+          `${process.env.NODE_OPTIONS || ''} --no-deprecation`.trim(),
+      },
     });
 
     child.on('close', (code) => {

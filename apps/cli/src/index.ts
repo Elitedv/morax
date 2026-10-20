@@ -1,3 +1,8 @@
+// Suppress Node.js runtime deprecation warnings (e.g. DEP0190)
+process.env.NODE_OPTIONS =
+  `${process.env.NODE_OPTIONS || ''} --no-deprecation`.trim();
+process.env.NODE_NO_WARNINGS = '1';
+
 import pc from 'picocolors';
 import { runWorkspaceScaffolder } from './core/runner.js';
 
