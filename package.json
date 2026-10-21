@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "morax",
   "description": "Morax is a next-generation CLI tool for scaffolding modern, high-performance pnpm monorepos and workspaces.",
   "private": false,

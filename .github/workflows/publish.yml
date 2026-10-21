@@ -1,9 +1,8 @@
 name: Publish create-morax
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -27,6 +26,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -36,13 +37,14 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Verify git tag matches package version
-        if: github.event_name == 'push'
+        if: github.event_name == 'release'
         working-directory: apps/cli
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${{ github.event.release.tag_name }}"
+          TAG="${TAG#v}"
           PKG="$(node -p "require('./package.json').version")"
           if [ "$TAG" != "$PKG" ]; then
-            echo "Tag v${TAG} does not match create-morax version ${PKG}"
+            echo "Release tag v${TAG} does not match create-morax version ${PKG}"
             exit 1
           fi
 
