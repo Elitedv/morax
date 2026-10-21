@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "rules": {
+      "source": "AshutoshDM1/skills",
+      "sourceType": "github",
+      "skillPath": "skills/rules/SKILL.md",
+      "computedHash": "9c1117c546fd8c5410380d3da80c9d44321e1544c2626424e11b39eed6fc1109"
+    }
+  }
+}
