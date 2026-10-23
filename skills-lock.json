@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "modular-nextjs-webapp": {
+      "source": "AshutoshDM1/skills",
+      "sourceType": "github",
+      "skillPath": "skills/modular-nextjs-webapp/SKILL.md",
+      "computedHash": "8bc28b0a05eacc2c2c194fa2be300a26ee3d0b54878b1d360bc45915d1bd063b"
+    },
     "rules": {
       "source": "AshutoshDM1/skills",
       "sourceType": "github",
